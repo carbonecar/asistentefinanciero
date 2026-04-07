@@ -1,0 +1,34 @@
+graph TD
+    User((Usuario/Telegram)) <--> TelegramBot[Bot API / Telegram]
+
+    subgraph Core_MAS [Sistema Multi-Agente]
+        Supervisor{Agente Orquestador}
+        
+        Fetcher[Agente de Datos<br/>'The Data Fetcher']
+        Auditor[Agente Analista<br/>'The Auditor']
+        Quant[Agente Proyecciones<br/>'The Quant']
+        News[Agente de Noticias<br/>'The News Scout']
+        UX[Agente de Síntesis<br/>'Messaging & UX']
+    end
+
+    TelegramBot --> Supervisor
+    Supervisor --> Fetcher
+    Supervisor --> Auditor
+    Supervisor --> Quant
+    Supervisor --> News
+    Supervisor --> UX
+    
+    News -.-> Supervisor
+    UX -.-> TelegramBot
+
+    subgraph Data_Tools [Stack Tecnológico]
+        DB[(Portfolio DB)]
+        Market[yfinance / Rava]
+        Scraper[NewsAPI / BeautifulSoup]
+        Math[PyPortfolioOpt / Scikit-Learn]
+    end
+
+    Fetcher --- DB
+    Fetcher --- Market
+    News --- Scraper
+    Quant --- Math

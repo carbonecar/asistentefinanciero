@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Arquitectura Multi-Agente</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --node-orq: #6366f1;
+            --node-spec: #334155;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            background-color: var(--panel-bg);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+
+        button {
+            background-color: var(--accent);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        button:disabled {
+            background-color: #475569;
+            cursor: not-allowed;
+        }
+
+        .main-content {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Contenedor del Grafo */
+        .graph-container {
+            position: relative;
+            flex: 2;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        line {
+            stroke: #475569;
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+
+        line.active {
+            stroke: var(--success);
+            stroke-width: 4;
+            stroke-dasharray: 0;
+        }
+
+        .node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            width: 140px;
+            border: 2px solid transparent;
+        }
+
+        .node.orq {
+            background-color: var(--node-orq);
+            top: 50%;
+            left: 50%;
+            z-index: 2;
+        }
+
+        .node.spec {
+            background-color: var(--node-spec);
+            font-size: 13px;
+            z-index: 1;
+        }
+
+        /* Posiciones fijas para los especialistas */
+        #node-df { top: 20%; left: 20%; }
+        #node-aud { top: 20%; left: 80%; }
+        #node-quant { top: 80%; left: 20%; }
+        #node-news { top: 80%; left: 80%; }
+
+        .node.active {
+            transform: translate(-50%, -50%) scale(1.1);
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Consola de Logs */
+        .log-panel {
+            flex: 1;
+            background-color: #000;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            overflow-y: auto;
+            color: var(--success);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-entry { opacity: 0; animation: fadeIn 0.3s forwards; }
+        .log-time { color: var(--text-muted); }
+        .log-system { color: var(--accent); }
+        .log-payload { color: var(--warning); margin-left: 10px; }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Arquitectura Multi-Agente Financiera</h2>
+        <div class="controls">
+            <select id="query-select">
+                <option value="A">Opción A: Rendimiento vs MEP y Noticias</option>
+                <option value="B">Opción B: Proyectar Portafolio Óptimo a 5 años</option>
+            </select>
+            <button id="exec-btn" onclick="executeSimulation()">Ejecutar Consulta</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="graph-container">
+            <svg>
+                <line id="line-df" x1="50%" y1="50%" x2="20%" y2="20%" />
+                <line id="line-aud" x1="50%" y1="50%" x2="80%" y2="20%" />
+                <line id="line-quant" x1="50%" y1="50%" x2="20%" y2="80%" />
+                <line id="line-news" x1="50%" y1="50%" x2="80%" y2="80%" />
+            </svg>
+
+            <div id="node-orq" class="node orq">Orquestador<br><small>(Supervisor)</small></div>
+            <div id="node-df" class="node spec">Data Fetcher<br><small>(PostgreSQL/yfinance)</small></div>
+            <div id="node-aud" class="node spec">The Auditor<br><small>(MEP/S&P 500)</small></div>
+            <div id="node-quant" class="node spec">The Quant<br><small>(PyPortfolioOpt)</small></div>
+            <div id="node-news" class="node spec">The News Scout<br><small>(RAG/Sentimiento)</small></div>
+        </div>
+
+        <div class="log-panel" id="log-panel">
+            <div class="log-entry">Sistema inicializado. Esperando consulta...</div>
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('exec-btn');
+        const select = document.getElementById('query-select');
+        const logPanel = document.getElementById('log-panel');
+
+        // Función auxiliar para esperar asincrónicamente
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Función para escribir en la consola
+        function log(message, type = 'normal') {
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            
+            let content = `<span class="log-time">[${time}]</span> `;
+            if (type === 'system') content += `<span class="log-system">${message}</span>`;
+            else if (type === 'payload') content += `<div class="log-payload">${message}</div>`;
+            else content += message;
+
+            div.innerHTML = content;
+            logPanel.appendChild(div);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        // Funciones para animar la UI
+        function toggleNode(id, isActive) {
+            const el = document.getElementById(id);
+            if (isActive) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+
+        function toggleLine(id, isActive) {
+            const el = document.getElementById(id);
+            if (isActive) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+
+        function resetUI() {
+            document.querySelectorAll('.node, line').forEach(el => el.classList.remove('active'));
+            logPanel.innerHTML = '';
+        }
+
+        // Lógica principal de la simulación
+        async function executeSimulation() {
+            btn.disabled = true;
+            resetUI();
+            const option = select.value;
+            
+            log(`Usuario inicia ejecución (Opción ${option})`, 'system');
+            
+            // 1. Llega al Orquestador
+            await sleep(500);
+            toggleNode('node-orq', true);
+            log('Orquestador analizando intención del usuario...');
+            await sleep(1500);
+
+            if (option === 'A') {
+                // Flujo A: Auditor + News Scout (Ejecución en Paralelo)
+                log('Intención detectada: Análisis de rendimiento e impacto de noticias.');
+                log('Function Call emitido: Ejecución paralela solicitada.', 'system');
+                log('{"tools": ["audit_performance", "analyze_news"]}', 'payload');
+                
+                await sleep(800);
+                toggleNode('node-orq', false);
+                toggleLine('line-aud', true);
+                toggleLine('line-news', true);
+                toggleNode('node-aud', true);
+                toggleNode('node-news', true);
+                
+                log('The Auditor: Calculando spread histórico MEP...');
+                log('The News Scout: Ejecutando RAG sobre Bloomberg/Reuters...');
+                
+                await sleep(2500); // Tiempo de procesamiento simulado
+                
+                log('Especialistas retornan resultados en formato JSON.');
+                toggleNode('node-aud', false);
+                toggleNode('node-news', false);
+                toggleLine('line-aud', false);
+                toggleLine('line-news', false);
+                
+                await sleep(500);
+                toggleNode('node-orq', true);
+                log('Orquestador sintetizando reporte final para el usuario...', 'system');
+                await sleep(1500);
+
+            } else {
+                // Flujo B: Data Fetcher -> Quant (Ejecución Secuencial)
+                log('Intención detectada: Optimización matemática de portafolio.');
+                log('Function Call emitido: Solicitando datos crudos.', 'system');
+                log('{"tool": "fetch_historical_data", "assets": "all"}', 'payload');
+                
+                await sleep(800);
+                toggleNode('node-orq', false);
+                toggleLine('line-df', true);
+                toggleNode('node-df', true);
+                log('Data Fetcher: Extrayendo series de tiempo de PostgreSQL y API externa...');
+                
+                await sleep(2000);
+                
+                toggleNode('node-df', false);
+                toggleLine('line-df', false);
+                toggleNode('node-orq', true);
+                log('Datos recibidos. Re-enrutando payload matemático...');
+                
+                await sleep(1000);
+                log('{"tool": "optimize_portfolio", "data_ref": "dataframe_id_442"}', 'payload');
+                toggleNode('node-orq', false);
+                toggleLine('line-quant', true);
+                toggleNode('node-quant', true);
+                log('The Quant: Ejecutando simulaciones de Monte Carlo y Markowitz...');
+                
+                await sleep(3000);
+                
+                toggleNode('node-quant', false);
+                toggleLine('line-quant', false);
+                toggleNode('node-orq', true);
+                log('Pesos óptimos calculados. Orquestador formateando respuesta...', 'system');
+                await sleep(1500);
+            }
+
+            toggleNode('node-orq', false);
+            log('=== FLUJO COMPLETADO ===', 'system');
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>

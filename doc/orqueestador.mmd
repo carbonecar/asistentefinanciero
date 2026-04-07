@@ -1,0 +1,19 @@
+graph TD
+    U((Usuario)) -->|Prompt| ORQ[Agente Orquestador\nSupervisor LLM]
+    
+    ORQ -->|Function Call:\nfetch_data| DF[Data Fetcher\nPostgreSQL / yfinance]
+    ORQ -->|Function Call:\naudit_performance| AUD[The Auditor\nMEP / S&P 500]
+    ORQ -->|Function Call:\noptimize_portfolio| QUA[The Quant\nPyPortfolioOpt / Monte Carlo]
+    ORQ -->|Function Call:\nanalyze_news| NS[The News Scout\nRAG / Análisis Sentimiento]
+    
+    DF -->|JSON Data| ORQ
+    AUD -->|JSON Data| ORQ
+    QUA -->|JSON Data| ORQ
+    NS -->|JSON Data| ORQ
+    
+    ORQ -->|Respuesta Sintetizada| U
+
+    classDef central fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#fff;
+    classDef worker fill:#34495e,stroke:#2c3e50,stroke-width:2px,color:#fff;
+    class ORQ central;
+    class DF,AUD,QUA,NS worker;
