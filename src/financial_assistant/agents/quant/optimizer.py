@@ -14,7 +14,7 @@ class PortfolioOptimizer:
         ohlcv_by_ticker: dict[str, list[OHLCV]],
         sentiment_map: dict[str, float] | None = None,
     ) -> OptimizedWeights | None:
-        from pypfopt import EfficientFrontier, expected_returns, risk_models  # type: ignore[import-untyped]
+        from pypfopt import EfficientFrontier, expected_returns, risk_models  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
 
         prices_df = self._build_prices_df(ohlcv_by_ticker)
         if prices_df.empty or len(prices_df.columns) < 2:
@@ -24,7 +24,7 @@ class PortfolioOptimizer:
         if sentiment_map:
             mu = self._apply_sentiment(mu, sentiment_map)
 
-        S = risk_models.sample_cov(prices_df)
+        S = risk_models.sample_cov(prices_df)  # pylint: disable=invalid-name
         ef = EfficientFrontier(mu, S, weight_bounds=(0, 1))
         ef.add_objective(lambda w: 1e-3 * (w**2).sum())  # L2 regularization
 
@@ -38,7 +38,7 @@ class PortfolioOptimizer:
                 annual_volatility=round(float(perf[1]), 4),
                 sharpe_ratio=round(float(perf[2]), 4),
             )
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             return None
 
     def _apply_sentiment(self, mu: "pd.Series", sentiment_map: dict[str, float]) -> "pd.Series":  # type: ignore[name-defined]

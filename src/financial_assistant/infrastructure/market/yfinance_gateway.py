@@ -41,5 +41,5 @@ class YFinanceGateway(IMarketDataGateway):
                     )
                 )
             return records
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             return []

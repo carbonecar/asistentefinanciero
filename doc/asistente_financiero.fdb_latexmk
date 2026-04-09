@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1774131525.41456 "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" "asistente_financiero.pdf" "asistente_financiero" 1774131526.01733 0
-  "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" 1774131525.21165 5668 370fd317fe7cc2f7b14f9de4520d89b8 ""
+["pdflatex"] 1775617193.56456 "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" "asistente_financiero.pdf" "asistente_financiero" 1775617194.10536 0
+  "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" 1775617192.83553 5761 77aaee4d854e9f1ab76d612a933d586a ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -92,9 +92,9 @@
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1744256002 3345740 16da992f8d5b798dcc13f02afb8e0a1f ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
   "arquitectura_asistente.png" 1774129950.32164 426925 264ad2582008cb142db29745190a04a3 ""
-  "asistente_financiero.aux" 1774131525.96511 1621 9151b6f8ba6738c088040c051c180a2f "pdflatex"
-  "asistente_financiero.out" 1774131525.96627 1446 9cdde572b4a567766a07d3680c51411c "pdflatex"
-  "asistente_financiero.tex" 1774131525.21165 5668 370fd317fe7cc2f7b14f9de4520d89b8 ""
+  "asistente_financiero.aux" 1775617194.06229 1642 d0cd555d416b5ac61008a99c643f4f02 "pdflatex"
+  "asistente_financiero.out" 1775617194.06345 1554 e74e1ee815dcbb82826bfa51477cc625 "pdflatex"
+  "asistente_financiero.tex" 1775617192.83553 5761 77aaee4d854e9f1ab76d612a933d586a ""
   (generated)
   "asistente_financiero.aux"
   "asistente_financiero.log"

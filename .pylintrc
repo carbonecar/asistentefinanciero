@@ -1,0 +1,16 @@
+[MASTER]
+fail-under=8.0
+
+[MESSAGES CONTROL]
+disable=
+    # Docstrings: proyecto académico, no librería pública
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring
+    C0116,  # missing-function-docstring
+    # Dataclasses y ABCs con un solo método son válidos
+    R0903,  # too-few-public-methods
+    # Duplicate-code entre DTO y domain model es intencional (no ORM leakage)
+    R0801,  # duplicate-code
+
+[FORMAT]
+max-line-length=120

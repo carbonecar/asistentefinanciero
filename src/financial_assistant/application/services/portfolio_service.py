@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from financial_assistant.application.dtos.requests import AddPositionCommand
 from financial_assistant.domain.models.portfolio import Portfolio, Position
 from financial_assistant.domain.ports.repositories import IPortfolioRepository

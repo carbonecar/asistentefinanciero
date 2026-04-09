@@ -25,7 +25,7 @@ from financial_assistant.infrastructure.nlp.sentiment_analyzer import TextBlobSe
 
 
 class Container:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings) -> None:  # pylint: disable=too-many-locals
         self.settings = settings
 
         # DB
@@ -60,7 +60,7 @@ class Container:
 
         class _SimulatorAdapter:
             def simulate(self, weights: object, ohlcv_by_ticker: dict, initial_value: float) -> object:  # type: ignore[type-arg]
-                from financial_assistant.domain.models.analysis import OptimizedWeights
+                from financial_assistant.domain.models.analysis import OptimizedWeights  # pylint: disable=import-outside-toplevel
                 assert isinstance(weights, OptimizedWeights)
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
 

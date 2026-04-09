@@ -22,7 +22,7 @@ class NewsAPIGateway(INewsGateway):
 
     def _fetch_sync(self, query: str, max_results: int) -> list[NewsArticle]:
         try:
-            from newsapi import NewsApiClient  # type: ignore[import-untyped]
+            from newsapi import NewsApiClient  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
 
             client = NewsApiClient(api_key=self._api_key)
             response = client.get_everything(
@@ -51,5 +51,5 @@ class NewsAPIGateway(INewsGateway):
                     )
                 )
             return articles
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             return []
