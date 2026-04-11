@@ -114,3 +114,7 @@ Hay dos archivos en `docker/`:
 | `docker-compose.prod.yml` | Extiende el base agregando `migrate` + `bot`. Se usa en **producción** (`make up`). |
 
 En desarrollo, `POSTGRES_HOST=localhost` en `.env`. En producción (dentro de Docker), `POSTGRES_HOST=postgres`.
+
+
+## Trasa y monitoreo
+ https://www.smith.langchain.com

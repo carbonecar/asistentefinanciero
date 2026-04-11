@@ -7,7 +7,7 @@ Available intents:
 - "optimize": User wants portfolio optimization (efficient frontier / min variance)
 - "news": User wants news sentiment for specific tickers
 - "data_fetch": User wants to add/update their portfolio positions
-- "general": Any other question (greetings, explanations, general finance questions)
+- "unsupported": The request does not match any of the above intents
 
 Respond by calling the classify_intent function with the extracted information.
 If you cannot identify specific tickers, use an empty list.
@@ -21,7 +21,7 @@ CLASSIFY_INTENT_SCHEMA = {
         "properties": {
             "intent": {
                 "type": "string",
-                "enum": ["audit", "optimize", "news", "data_fetch", "general"],
+                "enum": ["audit", "optimize", "news", "data_fetch", "unsupported"],
                 "description": "The classified user intent",
             },
             "tickers": {
