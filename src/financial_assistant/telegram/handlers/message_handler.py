@@ -42,6 +42,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
         "audit_report": None,
         "quant_result": None,
         "news_results": None,
+        "exchange_rates": None,
         "final_response": None,
         "error": None,
     }
@@ -80,6 +81,7 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
         "audit_report": None,
         "quant_result": None,
         "news_results": None,
+        "exchange_rates": None,
         "final_response": None,
         "error": None,
     }

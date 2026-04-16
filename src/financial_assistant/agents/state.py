@@ -5,6 +5,7 @@ from langchain_core.messages import BaseMessage
 from typing_extensions import TypedDict
 
 from financial_assistant.domain.models.analysis import AuditReport, QuantResult
+from financial_assistant.domain.models.fx import ExchangeRate
 from financial_assistant.domain.models.news import SentimentResult
 
 
@@ -25,6 +26,7 @@ class AgentState(TypedDict):
     audit_report: AuditReport | None
     quant_result: QuantResult | None
     news_results: list[SentimentResult] | None
+    exchange_rates: list[ExchangeRate] | None
 
     # ---- Final ----
     final_response: str | None

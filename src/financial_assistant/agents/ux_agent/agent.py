@@ -100,6 +100,14 @@ def _build_data_summary(state: AgentState) -> str:
             if info.get("latest_close"):
                 parts.append(f"  {ticker}: ${info['latest_close']:.2f} ({info['records_count']} records)")
 
+    if state.get("exchange_rates"):
+        parts.append("TIPO DE CAMBIO USD/ARS (dolarapi.com):")
+        for rate in state["exchange_rates"]:
+            parts.append(
+                f"  {rate.nombre}: compra ${rate.compra:,.2f} | venta ${rate.venta:,.2f}"
+                f"  (actualizado: {rate.updated_at.strftime('%d/%m %H:%M')})"
+            )
+
     if not parts:
         parts.append("No specific financial data available for this query.")
 

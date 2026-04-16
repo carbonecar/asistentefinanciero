@@ -5,6 +5,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from financial_assistant.agents.auditor.agent import make_auditor_node
 from financial_assistant.agents.data_fetcher.agent import make_data_fetcher_node
+from financial_assistant.agents.fx_fetcher.agent import make_fx_fetcher_node
 from financial_assistant.agents.news_scout.agent import make_news_scout_node
 from financial_assistant.agents.quant.agent import make_quant_node
 from financial_assistant.agents.state import AgentState
@@ -47,6 +48,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     market_data_service: object,
     quant_service: object,
     news_service: object,
+    fx_gateway: object,
     llm_provider: str = "openai",
     llm_model: str = "gpt-4o-mini",
     llm_api_key: str = "",
@@ -62,6 +64,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.add_node("auditor", make_auditor_node(audit_service))  # type: ignore[arg-type]
     workflow.add_node("quant", make_quant_node(quant_service))  # type: ignore[arg-type]
     workflow.add_node("news_scout", make_news_scout_node(news_service))  # type: ignore[arg-type]
+    workflow.add_node("fx_fetcher", make_fx_fetcher_node(fx_gateway))  # type: ignore[arg-type]
     workflow.add_node("ux_agent", make_ux_node(**llm_kwargs))
     workflow.add_node("unsupported", unsupported_node)
 
@@ -77,15 +80,16 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
             "auditor": "auditor",
             "quant": "quant",
             "news_scout": "news_scout",
-            "ux_agent": "ux_agent",
+            "ux_agent": "fx_fetcher",   # general intent: skip specialists, go to fx then ux
             "unsupported": "unsupported",
         },
     )
 
-    # All specialists converge to UX agent
+    # All specialists converge to fx_fetcher, then ux_agent
     for node in ("data_fetcher", "auditor", "quant", "news_scout"):
-        workflow.add_edge(node, "ux_agent")
+        workflow.add_edge(node, "fx_fetcher")
 
+    workflow.add_edge("fx_fetcher", "ux_agent")
     workflow.add_edge("ux_agent", END)
     workflow.add_edge("unsupported", END)
 
