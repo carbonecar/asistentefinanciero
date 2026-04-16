@@ -70,11 +70,14 @@ class Container:
         news_service = NewsService(news_gateway, TextBlobSentimentAnalyzer())
 
         # LangGraph compiled graph
+        llm_model = settings.ollama_model if settings.llm_provider == "ollama" else settings.openai_model
         self.graph = build_graph(
-            openai_model=settings.openai_model,
-            openai_api_key=settings.openai_api_key,
             audit_service=audit_service,
             market_data_service=market_data_service,
             quant_service=quant_service,
             news_service=news_service,
+            llm_provider=settings.llm_provider,
+            llm_model=llm_model,
+            llm_api_key=settings.openai_api_key,
+            llm_base_url=settings.ollama_base_url,
         )

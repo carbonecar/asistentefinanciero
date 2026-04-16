@@ -34,30 +34,35 @@ def route_by_intent(state: AgentState) -> str:
         "optimize": "quant",
         "news": "news_scout",
         "data_fetch": "data_fetcher",
+        "general": "ux_agent",
         "unsupported": "unsupported",
     }
-    destination = routes.get(intent, "unsupported")
+    destination = routes.get(intent, "ux_agent")
     logger.info("[GRAPH] supervisor → %s (intent=%s, tickers=%s)", destination, intent, state.get("active_tickers"))
     return destination
 
 
 def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    openai_model: str,
-    openai_api_key: str,
     audit_service: object,
     market_data_service: object,
     quant_service: object,
     news_service: object,
+    llm_provider: str = "openai",
+    llm_model: str = "gpt-4o-mini",
+    llm_api_key: str = "",
+    llm_base_url: str = "http://localhost:11434",
 ) -> object:
     workflow = StateGraph(AgentState)
 
+    llm_kwargs = dict(provider=llm_provider, model=llm_model, api_key=llm_api_key, base_url=llm_base_url)
+
     # Register nodes
-    workflow.add_node("supervisor", make_supervisor_node(openai_model, openai_api_key))
+    workflow.add_node("supervisor", make_supervisor_node(**llm_kwargs))
     workflow.add_node("data_fetcher", make_data_fetcher_node(market_data_service))  # type: ignore[arg-type]
     workflow.add_node("auditor", make_auditor_node(audit_service))  # type: ignore[arg-type]
     workflow.add_node("quant", make_quant_node(quant_service))  # type: ignore[arg-type]
     workflow.add_node("news_scout", make_news_scout_node(news_service))  # type: ignore[arg-type]
-    workflow.add_node("ux_agent", make_ux_node(openai_model, openai_api_key))
+    workflow.add_node("ux_agent", make_ux_node(**llm_kwargs))
     workflow.add_node("unsupported", unsupported_node)
 
     # Entry point
@@ -72,6 +77,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
             "auditor": "auditor",
             "quant": "quant",
             "news_scout": "news_scout",
+            "ux_agent": "ux_agent",
             "unsupported": "unsupported",
         },
     )

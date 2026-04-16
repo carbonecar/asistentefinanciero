@@ -216,7 +216,14 @@
 
         // Función auxiliar para esperar asincrónicamente
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        class OpcionA{
+            constructor(){
 
+                this.intencion = "Análisis de rendimiento e impacto de noticias";
+                this.tools = ["audit_performance", "analyze_news"];
+                }
+            
+        }
         // Función para escribir en la consola
         function log(message, type = 'normal') {
             const time = new Date().toLocaleTimeString();

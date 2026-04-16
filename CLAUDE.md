@@ -116,5 +116,5 @@ Hay dos archivos en `docker/`:
 En desarrollo, `POSTGRES_HOST=localhost` en `.env`. En producción (dentro de Docker), `POSTGRES_HOST=postgres`.
 
 
-## Trasa y monitoreo
+## Traza y monitoreo
  https://www.smith.langchain.com
