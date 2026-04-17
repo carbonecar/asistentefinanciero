@@ -1,16 +1,21 @@
 import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 
+from financial_assistant.agents.llm_factory import make_llm
 from financial_assistant.agents.state import AgentState
 from financial_assistant.agents.ux_agent.prompts import SYNTHESIS_SYSTEM_PROMPT, SYNTHESIS_USER_TEMPLATE
 
 logger = logging.getLogger(__name__)
 
 
-def make_ux_node(model: str, api_key: str):  # type: ignore[no-untyped-def]
-    llm = ChatOpenAI(model=model, api_key=api_key, temperature=0.3)
+def make_ux_node(  # type: ignore[no-untyped-def]
+    model: str,
+    api_key: str = "",
+    provider: str = "openai",
+    base_url: str = "http://localhost:11434",
+):
+    llm = make_llm(provider=provider, model=model, temperature=0.3, api_key=api_key, base_url=base_url)
 
     async def ux_node(state: AgentState) -> dict:  # type: ignore[type-arg]
         data_summary = _build_data_summary(state)

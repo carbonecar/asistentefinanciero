@@ -8,9 +8,16 @@ class Settings(BaseSettings):
     # Telegram
     telegram_bot_token: str
 
-    # OpenAI / LLM
-    openai_api_key: str
+    # LLM provider: "openai" | "ollama"
+    llm_provider: str = "openai"
+
+    # OpenAI
+    openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+
+    # Ollama
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2"
 
     # PostgreSQL
     postgres_user: str = "finassist"
@@ -30,6 +37,11 @@ class Settings(BaseSettings):
     sentiment_lambda: float = 0.15
     monte_carlo_simulations: int = 5000
     monte_carlo_horizon_days: int = 252
+
+    # LangSmith tracing
+    langchain_tracing_v2: bool = False
+    langchain_api_key: str = ""
+    langchain_project: str = "asistente-financiero"
 
     @computed_field  # type: ignore[misc]
     @property
