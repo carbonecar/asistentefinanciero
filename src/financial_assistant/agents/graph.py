@@ -8,7 +8,7 @@ from financial_assistant.agents.data_fetcher.agent import make_data_fetcher_node
 from financial_assistant.agents.fx_fetcher.agent import make_fx_fetcher_node
 from financial_assistant.agents.news_scout.agent import make_news_scout_node
 from financial_assistant.agents.quant.agent import make_quant_node
-from financial_assistant.agents.state import AgentState, NODE_FOR_INTENT, Node
+from financial_assistant.agents.state import AgentState, BLOCKING_INTENTS, NODE_FOR_INTENT, Node, ROUTING_OVERRIDES
 from financial_assistant.agents.supervisor.agent import make_supervisor_node
 from financial_assistant.agents.ux_agent.agent import make_ux_node
 
@@ -28,10 +28,29 @@ async def unsupported_node(state: AgentState) -> dict:  # type: ignore[type-arg]
     return {"final_response": UNSUPPORTED_RESPONSE, "error": None}
 
 
+def _resolve(intent: str) -> str:
+    node = NODE_FOR_INTENT.get(intent, Node.UNSUPPORTED)
+    return ROUTING_OVERRIDES.get(node, node)
+
+
 def route_by_intent(state: AgentState) -> list[str]:
     intents = state.get("intents", [Node.UNSUPPORTED])
-    destinations= [NODE_FOR_INTENT.get(intent, Node.UNSUPPORTED) for intent in intents]
+    blocking = [i for i in intents if i in BLOCKING_INTENTS]
+    non_blocking = [i for i in intents if i not in BLOCKING_INTENTS]
+    if blocking and non_blocking:
+        # run blockers first; post_fetch_router will dispatch the rest
+        destinations = [_resolve(i) for i in blocking]
+    else:
+        destinations = [_resolve(i) for i in intents]
     logger.info("[GRAPH] supervisor → %s (intents=%s, tickers=%s)", destinations, intents, state.get("active_tickers"))
+    return destinations
+
+
+def post_fetch_route(state: AgentState) -> list[str]:
+    intents = state.get("intents", [])
+    remaining = [_resolve(i) for i in intents if i not in BLOCKING_INTENTS]
+    destinations = remaining or [Node.FX_FETCHER]
+    logger.info("[GRAPH] post_fetch_router → %s", destinations)
     return destinations
 
 
@@ -59,26 +78,28 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.add_node(Node.FX_FETCHER, make_fx_fetcher_node(fx_gateway))  # type: ignore[arg-type]
     workflow.add_node(Node.UX_AGENT, make_ux_node(**llm_kwargs))
     workflow.add_node(Node.UNSUPPORTED, unsupported_node)
+    workflow.add_node(Node.POST_FETCH_ROUTER, lambda _: {})
 
     # Entry point
     workflow.set_entry_point(Node.SUPERVISOR)
 
-    # Route from supervisor to specialists
-    workflow.add_conditional_edges(
-        Node.SUPERVISOR,
-        route_by_intent,
-        {
-            Node.DATA_FETCHER: Node.DATA_FETCHER,
-            Node.AUDITOR: Node.AUDITOR,
-            Node.QUANT: Node.QUANT,
-            Node.NEWS_SCOUT: Node.NEWS_SCOUT,
-            Node.UX_AGENT: Node.FX_FETCHER,  # general intent: skip specialists, go to fx then ux
-            Node.UNSUPPORTED: Node.UNSUPPORTED,
-        },
-    )
+    _specialist_map = {
+        Node.DATA_FETCHER: Node.DATA_FETCHER,
+        Node.AUDITOR: Node.AUDITOR,
+        Node.QUANT: Node.QUANT,
+        Node.NEWS_SCOUT: Node.NEWS_SCOUT,
+        Node.FX_FETCHER: Node.FX_FETCHER,  # general after data_fetch, or no remaining intents
+        Node.UNSUPPORTED: Node.UNSUPPORTED,
+    }
 
-    # All specialists converge to fx_fetcher, then ux_agent
-    for node in (Node.DATA_FETCHER, Node.AUDITOR, Node.QUANT, Node.NEWS_SCOUT):
+    workflow.add_conditional_edges(Node.SUPERVISOR, route_by_intent, _specialist_map)
+
+    # data_fetcher always goes to post_fetch_router to dispatch any remaining intents
+    workflow.add_edge(Node.DATA_FETCHER, Node.POST_FETCH_ROUTER)
+    workflow.add_conditional_edges(Node.POST_FETCH_ROUTER, post_fetch_route, _specialist_map)
+
+    # remaining specialists converge to fx_fetcher
+    for node in (Node.AUDITOR, Node.QUANT, Node.NEWS_SCOUT):
         workflow.add_edge(node, Node.FX_FETCHER)
 
     workflow.add_edge(Node.FX_FETCHER, Node.UX_AGENT)

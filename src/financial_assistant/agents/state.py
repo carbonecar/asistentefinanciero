@@ -16,6 +16,7 @@ class Node:
     FX_FETCHER = "fx_fetcher"
     UX_AGENT = "ux_agent"
     UNSUPPORTED = "unsupported"
+    POST_FETCH_ROUTER = "post_fetch_router"
 
 
 NODE_FOR_INTENT: dict[str, str] = {
@@ -27,6 +28,16 @@ NODE_FOR_INTENT: dict[str, str] = {
     "unsupported": Node.UNSUPPORTED,
 }
 VALID_INTENTS: frozenset[str] = frozenset(NODE_FOR_INTENT)
+
+# Intents that must complete before others can fan-out in parallel.
+# When mixed with other intents, these run first; post_fetch_router dispatches the rest.
+BLOCKING_INTENTS: frozenset[str] = frozenset({"data_fetch"})
+
+# "general" skips specialists but still passes through fx_fetcher before ux_agent.
+# This dict overrides the logical node from NODE_FOR_INTENT to the actual graph target.
+ROUTING_OVERRIDES: dict[str, str] = {
+    Node.UX_AGENT: Node.FX_FETCHER,
+}
 
 from financial_assistant.domain.models.analysis import AuditReport, QuantResult
 from financial_assistant.domain.models.fx import ExchangeRate
