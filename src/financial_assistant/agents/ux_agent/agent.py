@@ -1,12 +1,14 @@
 import logging
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from financial_assistant.agents.llm_factory import make_llm
 from financial_assistant.agents.state import AgentState
 from financial_assistant.agents.ux_agent.prompts import SYNTHESIS_SYSTEM_PROMPT, SYNTHESIS_USER_TEMPLATE
 
 logger = logging.getLogger(__name__)
+
+_MAX_HISTORY = 10  # últimos N mensajes para no crecer infinito
 
 
 def make_ux_node(  # type: ignore[no-untyped-def]
@@ -21,18 +23,29 @@ def make_ux_node(  # type: ignore[no-untyped-def]
         data_summary = _build_data_summary(state)
         user_message = state.get("user_message", "")
 
-        prompt = SYNTHESIS_USER_TEMPLATE.format(
+        # Historial reciente (excluye el último HumanMessage, que ya está en el prompt)
+        history = list(state.get("messages", []))[-_MAX_HISTORY:-1]
+
+        # El mensaje final incluye los datos disponibles como contexto
+        current_prompt = SYNTHESIS_USER_TEMPLATE.format(
             user_message=user_message,
             data_summary=data_summary,
         )
+
+        messages = (
+            [SystemMessage(content=SYNTHESIS_SYSTEM_PROMPT)]
+            + history
+            + [HumanMessage(content=current_prompt)]
+        )
+
         try:
-            response = await llm.ainvoke(
-                [
-                    SystemMessage(content=SYNTHESIS_SYSTEM_PROMPT),
-                    HumanMessage(content=prompt),
-                ]
-            )
-            return {"final_response": response.content, "error": None}
+            response = await llm.ainvoke(messages)
+            # Guardar la respuesta en el historial para turnos futuros
+            return {
+                "final_response": response.content,
+                "messages": [AIMessage(content=response.content)],
+                "error": None,
+            }
         except Exception as exc:
             logger.error("UX agent LLM call failed: %s", exc)
             return {
