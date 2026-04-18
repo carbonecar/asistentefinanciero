@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from datetime import datetime
 from functools import partial
 
 from financial_assistant.domain.models.news import NewsArticle
 from financial_assistant.domain.ports.news_gateway import INewsGateway
+
+logger = logging.getLogger(__name__)
 
 
 class NewsAPIGateway(INewsGateway):
@@ -11,9 +14,12 @@ class NewsAPIGateway(INewsGateway):
 
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
+        if not api_key:
+            logger.warning("NewsAPIGateway: NEWSAPI_KEY not set — news fetching is disabled")
 
     async def fetch_articles(self, query: str, max_results: int = 20) -> list[NewsArticle]:
         if not self._api_key:
+            logger.debug("NewsAPIGateway: skipping fetch (no API key) for query=%r", query)
             return []
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
@@ -51,5 +57,6 @@ class NewsAPIGateway(INewsGateway):
                     )
                 )
             return articles
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("NewsAPIGateway._fetch_sync failed for query=%r: %s", query, exc)
             return []

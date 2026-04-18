@@ -20,6 +20,16 @@ def make_ux_node(  # type: ignore[no-untyped-def]
     llm = make_llm(provider=provider, model=model, temperature=0.3, api_key=api_key, base_url=base_url)
 
     async def ux_node(state: AgentState) -> dict:  # type: ignore[type-arg]
+        logger.info(
+            "[UX] intent=%s user=%s has_audit=%s has_quant=%s has_news=%s has_market=%s error=%r",
+            state.get("intent"),
+            state.get("user_id"),
+            bool(state.get("audit_report")),
+            bool(state.get("quant_result")),
+            bool(state.get("news_results")),
+            bool(state.get("market_data_result")),
+            state.get("error"),
+        )
         data_summary = _build_data_summary(state)
         user_message = state.get("user_message", "")
 
@@ -58,6 +68,7 @@ def make_ux_node(  # type: ignore[no-untyped-def]
 
 def _build_data_summary(state: AgentState) -> str:
     parts: list[str] = []
+    intent = state.get("intent", "")
 
     if state.get("audit_report"):
         report = state["audit_report"]
@@ -72,6 +83,8 @@ def _build_data_summary(state: AgentState) -> str:
             parts.append(f"  Top performer: {report.top_performer}")
         if report.worst_performer:
             parts.append(f"  Worst performer: {report.worst_performer}")
+    elif intent == "audit":
+        parts.append("AUDIT STATUS: El portfolio está vacío. El usuario no tiene posiciones registradas.")
 
     if state.get("quant_result"):
         qr = state["quant_result"]
@@ -95,6 +108,8 @@ def _build_data_summary(state: AgentState) -> str:
                 f"Pessimistic ${final_p5:,.0f} | "
                 f"Optimistic ${final_p95:,.0f}"
             )
+    elif intent == "optimize":
+        parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
     if state.get("news_results"):
         parts.append("NEWS SENTIMENT:")
@@ -105,13 +120,30 @@ def _build_data_summary(state: AgentState) -> str:
             )
             for headline in result.representative_headlines:
                 parts.append(f"    - {headline}")
+    elif intent == "news":
+        parts.append("NEWS STATUS: No se obtuvieron noticias. Posibles causas: NEWSAPI_KEY no configurada, o no se detectaron tickers en el mensaje.")
 
     if state.get("market_data_result"):
         md = state["market_data_result"]
-        parts.append("MARKET DATA FETCHED:")
-        for ticker, info in md.items():
-            if info.get("latest_close"):
-                parts.append(f"  {ticker}: ${info['latest_close']:.2f} ({info['records_count']} records)")
+        ok_entries = {t: i for t, i in md.items() if i.get("ok") is not False and i.get("latest_close")}
+        failed_entries = [t for t, i in md.items() if not i.get("latest_close")]
+        if ok_entries:
+            parts.append("MARKET DATA FETCHED:")
+            for ticker, info in ok_entries.items():
+                date_range = (
+                    f" [{info['first_date']} → {info['latest_date']}]"
+                    if info.get("first_date") and info.get("latest_date")
+                    else ""
+                )
+                parts.append(
+                    f"  {ticker}: ${info['latest_close']:.2f} "
+                    f"({info['records_count']} records{date_range})"
+                )
+        if failed_entries:
+            parts.append(f"SIN DATOS PARA: {', '.join(failed_entries)} — ticker inválido o fuente no disponible.")
+
+    if state.get("error"):
+        parts.append(f"INTERNAL ERROR: {state['error']}")
 
     if state.get("exchange_rates"):
         parts.append("TIPO DE CAMBIO USD/ARS (dolarapi.com):")

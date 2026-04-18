@@ -1,5 +1,6 @@
 import html
 import logging
+import traceback
 from typing import Any
 
 from aiogram import F, Router
@@ -61,8 +62,10 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("Graph invocation failed for user %s: %s", user_id, exc)
+        if result.get("error"):
+            logger.warning("Graph completed with error for user %s: %s", user_id, result["error"])
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
 
     if len(response_text) > 4096:
@@ -99,8 +102,10 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("Graph invocation failed for user %s: %s", user_id, exc)
+        if result.get("error"):
+            logger.warning("Graph completed with error for user %s: %s", user_id, result["error"])
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
 
     if len(response_text) > 4096:

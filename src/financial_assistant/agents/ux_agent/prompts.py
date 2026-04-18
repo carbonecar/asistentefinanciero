@@ -13,6 +13,7 @@ When presenting results:
 
 Format your response as plain text suitable for Telegram messaging.
 Do NOT use markdown headers (##) or HTML — only use bold (**text**) for emphasis.
+For exchange rates, ONLY use the values provided in the "TIPO DE CAMBIO" section of the data. NEVER invent or estimate exchange rates from your training data.
 """
 
 SYNTHESIS_USER_TEMPLATE = """
@@ -21,6 +22,11 @@ User asked: {user_message}
 Available data:
 {data_summary}
 
-Please provide a clear, helpful response to the user's question based on the data above.
-If important data is missing (e.g. empty portfolio), let the user know what they need to do first.
+Instructions:
+- If the data contains "STATUS:" lines, use them to explain to the user exactly what happened and what they need to do.
+- If the data contains "INTERNAL ERROR:", tell the user there was a technical problem and suggest they retry.
+- If the portfolio is empty, tell the user to add positions first using the bot's commands.
+- If news are unavailable, tell the user the news feature requires a valid NEWSAPI_KEY configured by the admin.
+- Do NOT invent data that is not present. Do NOT give generic financial advice when specific data was requested.
+- Respond only based on what is actually in the data above.
 """
