@@ -1,4 +1,4 @@
-from financial_assistant.agents.auditor.calculators import (
+from financial_assistant.domain.services.calculators import (
     compute_ohlcv_return,
     compute_portfolio_return,
 )

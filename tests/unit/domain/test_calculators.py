@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from financial_assistant.agents.auditor.calculators import (
+from financial_assistant.domain.services.calculators import (
     compute_ohlcv_return,
     compute_opportunity_cost,
     compute_portfolio_return,
