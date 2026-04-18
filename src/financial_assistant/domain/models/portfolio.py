@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 
-class AssetType(str, Enum):
+class AssetType(StrEnum):
     STOCK = "stock"
     BOND_ON = "bond_on"  # Obligación Negociable
     ETF = "etf"
