@@ -36,9 +36,7 @@ class AuditService:
         ]
 
         returns_by_ticker = {
-            ticker: self._compute_ohlcv_return(records)
-            for ticker, records in market_data.items()
-            if records
+            ticker: self._compute_ohlcv_return(records) for ticker, records in market_data.items() if records
         }
         top = max(returns_by_ticker, key=lambda t: returns_by_ticker[t], default="")
         worst = min(returns_by_ticker, key=lambda t: returns_by_ticker[t], default="")
@@ -52,9 +50,7 @@ class AuditService:
             worst_performer=worst,
         )
 
-    def _compute_portfolio_return(
-        self, portfolio: Portfolio, market_data: dict[str, list[OHLCV]]
-    ) -> Decimal:
+    def _compute_portfolio_return(self, portfolio: Portfolio, market_data: dict[str, list[OHLCV]]) -> Decimal:
         total_cost = portfolio.total_cost_usd()
         if total_cost == 0:
             return Decimal("0")

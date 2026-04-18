@@ -1,7 +1,7 @@
 from typing import Annotated, Any, Literal
 
-from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
 Intent = Literal["audit", "optimize", "news", "data_fetch", "general", "unsupported"]
@@ -51,7 +51,7 @@ class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
     # ---- Routing (set by supervisor) ----
-    intents: list[Intent]  #Intent
+    intents: list[Intent]  # Intent
     active_tickers: list[str]
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool

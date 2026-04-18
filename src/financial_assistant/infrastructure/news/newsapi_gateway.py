@@ -16,9 +16,7 @@ class NewsAPIGateway(INewsGateway):
         if not self._api_key:
             return []
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None, partial(self._fetch_sync, query, max_results)
-        )
+        return await loop.run_in_executor(None, partial(self._fetch_sync, query, max_results))
 
     def _fetch_sync(self, query: str, max_results: int) -> list[NewsArticle]:
         try:
@@ -32,11 +30,9 @@ class NewsAPIGateway(INewsGateway):
                 page_size=min(max_results, 100),
             )
             articles = []
-            for item in (response.get("articles") or []):
+            for item in response.get("articles") or []:
                 try:
-                    published_at = datetime.fromisoformat(
-                        item["publishedAt"].replace("Z", "+00:00")
-                    )
+                    published_at = datetime.fromisoformat(item["publishedAt"].replace("Z", "+00:00"))
                 except (ValueError, KeyError):
                     published_at = datetime.utcnow()
 

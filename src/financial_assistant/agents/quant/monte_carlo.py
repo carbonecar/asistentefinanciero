@@ -29,9 +29,7 @@ class MonteCarloSimulator:
 
         for t in range(1, self._horizon):
             z = np.random.standard_normal(self._n)
-            paths[:, t] = paths[:, t - 1] * np.exp(
-                (mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z
-            )
+            paths[:, t] = paths[:, t - 1] * np.exp((mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z)
 
         return SimulationResult(
             horizon_days=self._horizon,

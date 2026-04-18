@@ -1,8 +1,6 @@
 from datetime import date
 from decimal import Decimal
 
-import pytest
-
 from financial_assistant.agents.auditor.calculators import (
     compute_ohlcv_return,
     compute_opportunity_cost,
@@ -14,7 +12,9 @@ from financial_assistant.domain.models.portfolio import AssetType, Portfolio, Po
 
 def make_ohlcv(ticker: str, start_close: float, end_close: float) -> list[OHLCV]:
     return [
-        OHLCV(ticker, date(2024, 1, 1), Decimal("100"), Decimal("100"), Decimal("100"), Decimal(str(start_close)), 1000),
+        OHLCV(
+            ticker, date(2024, 1, 1), Decimal("100"), Decimal("100"), Decimal("100"), Decimal(str(start_close)), 1000
+        ),
         OHLCV(ticker, date(2024, 6, 1), Decimal("100"), Decimal("100"), Decimal("100"), Decimal(str(end_close)), 1000),
     ]
 

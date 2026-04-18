@@ -17,9 +17,7 @@ class YFinanceGateway(IMarketDataGateway):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, partial(self._fetch_sync, ticker, period))
 
-    async def fetch_benchmark(
-        self, benchmark: Literal["SPY", "^GSPC", "GC=F"]
-    ) -> list[OHLCV]:
+    async def fetch_benchmark(self, benchmark: Literal["SPY", "^GSPC", "GC=F"]) -> list[OHLCV]:
         return await self.fetch_ohlcv(benchmark, period="1y")
 
     def _fetch_sync(self, ticker: str, period: str) -> list[OHLCV]:

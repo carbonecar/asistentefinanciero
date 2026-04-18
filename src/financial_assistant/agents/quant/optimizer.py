@@ -14,7 +14,11 @@ class PortfolioOptimizer:
         ohlcv_by_ticker: dict[str, list[OHLCV]],
         sentiment_map: dict[str, float] | None = None,
     ) -> OptimizedWeights | None:
-        from pypfopt import EfficientFrontier, expected_returns, risk_models  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
+        from pypfopt import (  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
+            EfficientFrontier,
+            expected_returns,
+            risk_models,
+        )
 
         prices_df = self._build_prices_df(ohlcv_by_ticker)
         if prices_df.empty or len(prices_df.columns) < 2:
@@ -49,12 +53,10 @@ class PortfolioOptimizer:
         return adjusted
 
     def _build_prices_df(self, ohlcv_by_ticker: dict[str, list[OHLCV]]) -> "pd.DataFrame":  # type: ignore[name-defined]
-        series: dict[str, "pd.Series"] = {}  # type: ignore[name-defined]
+        series: dict[str, pd.Series] = {}  # type: ignore[name-defined]
         for ticker, records in ohlcv_by_ticker.items():
             if records:
-                series[ticker] = pd.Series(
-                    {r.date: float(r.close) for r in records}, name=ticker
-                )
+                series[ticker] = pd.Series({r.date: float(r.close) for r in records}, name=ticker)
         if not series:
             return pd.DataFrame()
         df = pd.DataFrame(series).sort_index()

@@ -32,9 +32,7 @@ class QuantService:
             records = await self._market_gateway.fetch_ohlcv(ticker, period="1y")
             ohlcv_by_ticker[ticker] = records
 
-        sentiment_map = (
-            {r.ticker: r.score for r in sentiment_results} if sentiment_results else {}
-        )
+        sentiment_map = {r.ticker: r.score for r in sentiment_results} if sentiment_results else {}
 
         weights = self._optimizer.minimum_variance(
             ohlcv_by_ticker,

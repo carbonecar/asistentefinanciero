@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Multi-agent financial assistant for Argentine retail investors. Combines fixed income (Obligaciones Negociables) and variable income (stocks/ETFs) in a single portfolio management tool. Exposed via Telegram bot. Academic project for a Master's in AI.
 
+## Setup inicial
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
+cp .env.example .env  # completar tokens y passwords
+```
+
 ## Commands
 
 **Desarrollo local** (app en la máquina, infra en Docker):
