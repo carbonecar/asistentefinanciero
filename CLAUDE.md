@@ -33,6 +33,7 @@ pytest tests/unit/domain/test_calculators.py::test_ohlcv_return_positive -v
 ```bash
 make lint    # ruff + mypy
 make fmt     # ruff format + autofix
+pytest tests/unit/ -v --cov --cov-report=term-missing   # con coverage
 ```
 
 ## Architecture
@@ -73,18 +74,24 @@ telegram/        ← Driving adapter. Entry point for user interactions.
 
 ## LangGraph Flow
 
+The supervisor classifies the message into one or more intents (`list[Intent]`). The graph fans out to the corresponding specialist nodes in parallel, then converges at `fx_fetcher → ux_agent`.
+
 ```
 Telegram message → message_handler.py
                  → graph.ainvoke(initial_state, config={"thread_id": user_id})
-                 → supervisor (intent classification via OpenAI function calling)
-                 → [conditional edge by intent]
-                      "audit"      → auditor      → ux_agent
-                      "optimize"   → quant        → ux_agent
-                      "news"       → news_scout   → ux_agent
-                      "data_fetch" → data_fetcher → ux_agent
-                      "general"    → ux_agent (directly)
-                 → final_response sent to Telegram
+                 → supervisor (intent classification via LLM function calling)
+                 → [multi-intent fan-out]
+                      "audit"      → auditor      ─┐
+                      "optimize"   → quant         ├─→ fx_fetcher → ux_agent → final_response
+                      "news"       → news_scout    ─┘
+                      "data_fetch" → data_fetcher → post_fetch_router → (remaining intents) ─→ fx_fetcher → ux_agent
+                      "general"    → fx_fetcher → ux_agent (skips specialists)
+                      "unsupported"→ END (fixed response)
 ```
+
+**Sequencing rule**: `data_fetch` is a blocking intent. When combined with other intents (e.g. `["data_fetch", "audit"]`), `data_fetcher` runs first and `post_fetch_router` dispatches the remaining specialists afterward, ensuring data is persisted before analysis.
+
+All routing constants (`Node`, `NODE_FOR_INTENT`, `BLOCKING_INTENTS`, `ROUTING_OVERRIDES`) live in `agents/state.py` — no string literals in `graph.py`.
 
 State persistence uses LangGraph `MemorySaver` (in-memory). For production, replace with Redis checkpointer.
 
@@ -115,6 +122,24 @@ Hay dos archivos en `docker/`:
 
 En desarrollo, `POSTGRES_HOST=localhost` en `.env`. En producción (dentro de Docker), `POSTGRES_HOST=postgres`.
 
+
+## CI
+
+`.github/workflows/ci.yml` corre en cada push y en PRs a `main`. Dos jobs paralelos:
+
+| Job | Qué hace |
+|-----|----------|
+| `lint` | `ruff check src/ tests/` + `mypy src/` |
+| `test` | `pytest tests/unit/` con `pytest-cov` (umbral mínimo: 50%). Sube `coverage.xml` como artefacto. |
+
+Los integration tests (`tests/integration/`) **no** corren en CI porque requieren postgres + redis.
+
+Para ejecutar el CI localmente:
+```bash
+make lint && make test
+# o con coverage explícito:
+pytest tests/unit/ -v --cov --cov-report=term-missing
+```
 
 ## Traza y monitoreo
  https://www.smith.langchain.com

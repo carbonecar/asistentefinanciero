@@ -1,12 +1,13 @@
+import html
 import logging
 from typing import Any
 
 from aiogram import F, Router
+from aiogram.enums import ParseMode
 from aiogram.types import CallbackQuery, Message
 from langchain_core.messages import HumanMessage
 
 from financial_assistant.agents.state import AgentState
-from aiogram.types import CallbackQuery,Message
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,17 @@ INTENT_MESSAGES = {
 }
 
 
+async def _safe_answer(target: Message, text: str) -> None:
+    """Send LLM response using HTML mode with escaped text.
+    html.escape() neutralizes <, >, & so the LLM output can never produce
+    broken entities, while still letting us use <b>/<i> manually if needed.
+    """
+    await target.answer(html.escape(text), parse_mode=ParseMode.HTML)
+
+
 @message_router.callback_query(F.data.startswith("intent:"))
 async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # noqa: ANN401
-    await callback.answer()  # cierra el spinner del botón
+    await callback.answer()
 
     user_id = callback.from_user.id if callback.from_user else 0
     intent = callback.data.split(":")[1]  # type: ignore[union-attr]
@@ -42,6 +51,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
         "audit_report": None,
         "quant_result": None,
         "news_results": None,
+        "exchange_rates": None,
         "final_response": None,
         "error": None,
     }
@@ -51,21 +61,20 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error("Graph invocation failed for user %s: %s", user_id, exc)
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
 
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."
 
-    await callback.message.answer(response_text)  # type: ignore[union-attr]
+    await _safe_answer(callback.message, response_text)  # type: ignore[arg-type]
 
 
 @message_router.message(F.text)
 async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     user_id = message.from_user.id if message.from_user else 0
 
-    # Show typing indicator
     await message.bot.send_chat_action(message.chat.id, "typing")  # type: ignore[union-attr]
 
     initial_state: AgentState = {
@@ -80,6 +89,7 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
         "audit_report": None,
         "quant_result": None,
         "news_results": None,
+        "exchange_rates": None,
         "final_response": None,
         "error": None,
     }
@@ -89,30 +99,11 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.error("Graph invocation failed for user %s: %s", user_id, exc)
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
 
-    # Telegram message limit is 4096 chars
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."
 
-    await message.answer(response_text)
-
-
-
-@message_router.callback_query(F.data.startswith("intent:"))
-async def on_callback_query(callback_query: CallbackQuery) -> None:
-    intent = callback_query.data.split("intent:")[1]
-    if intent == "audit":
-        await callback_query.message.answer("¡Vamos a auditar tu cartera! 📊")
-    elif intent == "optimize":
-        await callback_query.message.answer("¡Optimicemos tu portfolio! ⚡")
-    elif intent == "news":
-        await callback_query.message.answer("¡Revisemos las noticias! 📰")
-    elif intent == "add_position":
-        await callback_query.message.answer(
-            "Para agregar una posición, escribime algo como:\n"
-            "_\"Agregar 10 acciones de AAPL a $175 promedio\"_"
-        )
-    await callback_query.answer()  # Acknowledge the callback query
+    await _safe_answer(message, response_text)
