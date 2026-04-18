@@ -6,7 +6,6 @@ from aiogram.types import CallbackQuery, Message
 from langchain_core.messages import HumanMessage
 
 from financial_assistant.agents.state import AgentState
-from aiogram.types import CallbackQuery,Message
 
 logger = logging.getLogger(__name__)
 
@@ -99,20 +98,3 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
 
     await message.answer(response_text)
 
-
-
-@message_router.callback_query(F.data.startswith("intent:"))
-async def on_callback_query(callback_query: CallbackQuery) -> None:
-    intent = callback_query.data.split("intent:")[1]
-    if intent == "audit":
-        await callback_query.message.answer("¡Vamos a auditar tu cartera! 📊")
-    elif intent == "optimize":
-        await callback_query.message.answer("¡Optimicemos tu portfolio! ⚡")
-    elif intent == "news":
-        await callback_query.message.answer("¡Revisemos las noticias! 📰")
-    elif intent == "add_position":
-        await callback_query.message.answer(
-            "Para agregar una posición, escribime algo como:\n"
-            "_\"Agregar 10 acciones de AAPL a $175 promedio\"_"
-        )
-    await callback_query.answer()  # Acknowledge the callback query
