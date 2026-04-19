@@ -36,7 +36,9 @@ class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
         except TimeoutError:
             logger.error(
                 "[YFinance] Timeout (%.0fs) fetching %s (period=%s) — source unresponsive",
-                self._timeout, ticker, period,
+                self._timeout,
+                ticker,
+                period,
             )
             return []
 
@@ -50,7 +52,8 @@ class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
                 logger.warning(
                     "[YFinance] No data returned for %s (period=%s) — "
                     "ticker may not exist or have no history for this period",
-                    ticker, period,
+                    ticker,
+                    period,
                 )
                 return []
             # yfinance >= 0.2 returns MultiIndex columns when downloading a single ticker
@@ -71,9 +74,12 @@ class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
                 )
             logger.debug("[YFinance] %s — fetched %d records", ticker, len(records))
             return records
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except Exception as exc:
             logger.error(
                 "[YFinance] Exception fetching %s (period=%s): %s",
-                ticker, period, exc, exc_info=True,
+                ticker,
+                period,
+                exc,
+                exc_info=True,
             )
             return []
