@@ -30,6 +30,11 @@ EXAMPLES:
 - "cuánto vale mi inversión en AAPL?" → ["data_fetch","audit"], tickers=["AAPL"]
 - "qué es el índice Sharpe?" → ["general"]
 - "cuál es la mejor acción para comprar?" → ["general"]
+- "investiga AAPL" → ["news"], tickers=["AAPL"]
+- "investiga" → ["general"]  (sin ticker → no se puede routear a news)
+- "confirmo" → ["general"]   (sin contexto de acción → general)
+- "acepto" → ["general"]
+- "OFICIAL" → ["general"]    (sin contexto adicional → general)
 
 Always call the classify_intent function. Never respond with plain text.
 """

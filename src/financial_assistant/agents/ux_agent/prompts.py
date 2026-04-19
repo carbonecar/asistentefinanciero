@@ -13,7 +13,7 @@ When presenting results:
      NEVER invent or estimate exchange rates from your training data.
 
 Format your response as plain text suitable for Telegram messaging.
-Do NOT use markdown headers (##) or HTML — only use bold (**text**) for emphasis.
+Do NOT use markdown headers (##). Use <b>text</b> for bold emphasis (Telegram HTML mode).
 For exchange rates, ONLY use the values provided in the "TIPO DE CAMBIO" section of the data.
 NEVER invent or estimate exchange rates from your training data.
 """
@@ -29,6 +29,10 @@ Instructions:
 - If the data contains "INTERNAL ERROR:", tell the user there was a technical problem and suggest they retry.
 - If the portfolio is empty, tell the user to add positions first using the bot's commands.
 - If news are unavailable, tell the user the news feature requires a valid NEWSAPI_KEY configured by the admin.
+- If the user wrote something like "confirmo", "acepto", "sí", "OFICIAL" or similar short confirmations
+  without a clear prior action context in the data: tell them that multi-step confirmation flows are not
+  yet supported, and ask them to send their request as a single complete message
+  (e.g. "Tengo 10 AAPL a $170" or "Auditá mi cartera").
 - Do NOT invent data that is not present. Do NOT give generic financial advice when specific data was requested.
 - Respond only based on what is actually in the data above.
 """

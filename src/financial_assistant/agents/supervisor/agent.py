@@ -45,6 +45,7 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
             "active_tickers": [],
             "period": "1y",
             "use_sentiment": False,
+            "errors": ["Supervisor no pudo clasificar la consulta (fallo LLM). Respondiendo de forma general."],
         }
 
     return supervisor_node

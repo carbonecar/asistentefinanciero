@@ -38,5 +38,8 @@ async def on_help(message: Message) -> None:
 @command_router.message(Command("portfolio"))
 async def on_portfolio(message: Message, graph: object) -> None:
     await message.answer(
-        'Para agregar una posición, escribime algo como:\n"Agregar 10 acciones de AAPL a $175 promedio"'
+        "La gestión manual de posiciones está en desarrollo.\n\n"
+        "Por ahora podés decirme tus tenencias directamente, por ejemplo:\n"
+        '"Tengo 10 AAPL y 500 GD30"\n\n'
+        "El sistema registrará los datos de mercado de esos tickers."
     )
