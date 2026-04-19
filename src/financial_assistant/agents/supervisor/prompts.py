@@ -11,7 +11,8 @@ INTENT DEFINITIONS (you may return one or more):
 - "unsupported"→ ONLY use this if the request has NOTHING to do with finance or investing
 
 IMPORTANT: Most messages map to one intent. Use multiple intents only when the user clearly requests
-multiple distinct actions in the same message (e.g. "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]).
+multiple distinct actions in the same message 
+(e.g. "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]).
 Only use "unsupported" (alone) for clearly non-financial topics (e.g. "tell me a joke").
 
 EXAMPLES:

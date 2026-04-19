@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     langchain_api_key: str = ""
     langchain_project: str = "asistente-financiero"
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def effective_postgres_dsn(self) -> str:
         if self.postgres_dsn:

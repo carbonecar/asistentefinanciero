@@ -71,11 +71,11 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
 
     # Register nodes
     workflow.add_node(Node.SUPERVISOR, make_supervisor_node(**llm_kwargs))
-    workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.QUANT, make_quant_node(quant_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.FX_FETCHER, make_fx_fetcher_node(fx_gateway))  # type: ignore[arg-type]
+    workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service))
+    workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))
+    workflow.add_node(Node.QUANT, make_quant_node(quant_service))
+    workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service))
+    workflow.add_node(Node.FX_FETCHER, make_fx_fetcher_node(fx_gateway))
     workflow.add_node(Node.UX_AGENT, make_ux_node(**llm_kwargs))
     workflow.add_node(Node.UNSUPPORTED, unsupported_node)
     workflow.add_node(Node.POST_FETCH_ROUTER, lambda _: {})

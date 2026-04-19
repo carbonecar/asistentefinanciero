@@ -68,7 +68,7 @@ class PostgresMarketDataRepository(IMarketDataRepository):
     def _to_domain(self, orm: OHLCVRecordORM) -> OHLCV:
         return OHLCV(
             ticker=orm.ticker,
-            date=orm.date,  # type: ignore[arg-type]
+            date=orm.date,
             open=Decimal(str(orm.open)),
             high=Decimal(str(orm.high)),
             low=Decimal(str(orm.low)),

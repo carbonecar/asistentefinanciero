@@ -1,5 +1,6 @@
 import pandas as pd
 
+from pypfopt import EfficientFrontier,expected_returns,risk_models
 from financial_assistant.domain.models.analysis import OptimizedWeights
 from financial_assistant.domain.models.market_data import OHLCV
 
@@ -14,12 +15,7 @@ class PortfolioOptimizer:
         ohlcv_by_ticker: dict[str, list[OHLCV]],
         sentiment_map: dict[str, float] | None = None,
     ) -> OptimizedWeights | None:
-        from pypfopt import (  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
-            EfficientFrontier,
-            expected_returns,
-            risk_models,
-        )
-
+       
         prices_df = self._build_prices_df(ohlcv_by_ticker)
         if prices_df.empty or len(prices_df.columns) < 2:
             return None

@@ -6,7 +6,7 @@ from financial_assistant.domain.ports.fx_gateway import IExchangeRateGateway
 logger = logging.getLogger(__name__)
 
 
-def make_fx_fetcher_node(fx_gateway: IExchangeRateGateway):  # type: ignore[no-untyped-def]
+def make_fx_fetcher_node(fx_gateway: IExchangeRateGateway):
     async def fx_fetcher_node(state: AgentState) -> dict:
         try:
             rates = await fx_gateway.fetch_rates()
