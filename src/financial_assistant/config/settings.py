@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     monte_carlo_simulations: int = 5000
     monte_carlo_horizon_days: int = 252
 
+    # DB
+    sql_echo: bool = False  # set SQL_ECHO=true to log all SQL statements
+
     # LangSmith tracing
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""
