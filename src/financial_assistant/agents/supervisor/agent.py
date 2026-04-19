@@ -37,7 +37,7 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
                     "period": args.get("period", "1y"),
                     "use_sentiment": args.get("use_sentiment", False),
                 }
-        except Exception as exc:
+        except Exception:
             logger.error("Supervisor LLM call failed — routing to 'general':\n%s", traceback.format_exc())
 
         return {

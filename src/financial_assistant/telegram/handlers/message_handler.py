@@ -30,21 +30,21 @@ async def _safe_answer(target: Message, text: str) -> None:
     await target.answer(html.escape(text), parse_mode=ParseMode.HTML)
 
 
-@message_router.callback_query(F.data.startswith("intent:"))
+@message_router.callback_query(F.data.startswith("intent:"))  # type: ignore[untyped-decorator]
 async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # noqa: ANN401
     await callback.answer()
 
     user_id = callback.from_user.id if callback.from_user else 0
-    intent = callback.data.split(":")[1]  # type: ignore[union-attr]
+    intent = callback.data.split(":")[1]
     user_message = INTENT_MESSAGES.get(intent, intent)
 
-    await callback.bot.send_chat_action(callback.message.chat.id, "typing")  # type: ignore[union-attr]
+    await callback.bot.send_chat_action(callback.message.chat.id, "typing")
 
     initial_state: AgentState = {
         "user_id": user_id,
         "user_message": user_message,
         "messages": [HumanMessage(content=user_message)],
-        "intents": [intent],  # type: ignore[list-item]
+        "intents": [intent],
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
@@ -71,14 +71,14 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."
 
-    await _safe_answer(callback.message, response_text)  # type: ignore[arg-type]
+    await _safe_answer(callback.message, response_text)
 
 
-@message_router.message(F.text)
+@message_router.message(F.text)  # type: ignore[untyped-decorator]
 async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     user_id = message.from_user.id if message.from_user else 0
 
-    await message.bot.send_chat_action(message.chat.id, "typing")  # type: ignore[union-attr]
+    await message.bot.send_chat_action(message.chat.id, "typing")
 
     initial_state: AgentState = {
         "user_id": user_id,

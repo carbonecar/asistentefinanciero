@@ -37,6 +37,6 @@ def make_llm(
 
     return ChatOpenAI(
         model=model,
-        api_key=api_key,  # type: ignore[arg-type]
+        api_key=api_key,
         temperature=temperature,
     )

@@ -2,7 +2,7 @@ from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
+class Settings(BaseSettings):  # type: ignore[misc]
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Telegram
@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     langchain_api_key: str = ""
     langchain_project: str = "asistente-financiero"
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[prop-decorator, untyped-decorator]
     @property
     def effective_postgres_dsn(self) -> str:
         if self.postgres_dsn:

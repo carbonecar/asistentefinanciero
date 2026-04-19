@@ -12,7 +12,6 @@ import pytest
 from financial_assistant.agents.data_fetcher.agent import _normalize_tickers, make_data_fetcher_node
 from financial_assistant.domain.models.market_data import OHLCV
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -276,6 +275,7 @@ class TestYFinanceGateway:
     async def test_timeout_returns_empty_list(self):
         import asyncio
         from unittest.mock import patch
+
         from financial_assistant.infrastructure.market.yfinance_gateway import YFinanceGateway
 
         gateway = YFinanceGateway(timeout=0.001)  # 1ms → always times out
@@ -294,8 +294,8 @@ class TestYFinanceGateway:
     @pytest.mark.asyncio
     async def test_timeout_is_configurable(self):
         from financial_assistant.infrastructure.market.yfinance_gateway import (
-            YFinanceGateway,
             _DEFAULT_TIMEOUT_SECONDS,
+            YFinanceGateway,
         )
         gw_default = YFinanceGateway()
         gw_custom = YFinanceGateway(timeout=10.0)

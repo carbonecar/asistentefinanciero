@@ -32,7 +32,7 @@ class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
                 loop.run_in_executor(None, partial(self._fetch_sync, ticker, period)),
                 timeout=self._timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(
                 "[YFinance] Timeout (%.0fs) fetching %s (period=%s) — source unresponsive",
                 self._timeout, ticker, period,

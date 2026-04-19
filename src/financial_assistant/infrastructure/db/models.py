@@ -5,7 +5,7 @@ from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Numeric, String, 
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-class Base(DeclarativeBase):
+class Base(DeclarativeBase):  # type: ignore[misc]
     pass
 
 
