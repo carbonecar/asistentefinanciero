@@ -10,7 +10,7 @@ def make_fx_fetcher_node(fx_gateway: IExchangeRateGateway):  # type: ignore[no-u
     async def fx_fetcher_node(state: AgentState) -> dict:
         try:
             rates = await fx_gateway.fetch_rates()
-            logger.info("[FX] fetched %d rates. State: %s", len(rates),state)
+            logger.info("[FX] fetched %d rates. State: %s", len(rates), state)
             return {"exchange_rates": rates, "error": None}
         except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.warning("FX fetcher failed: %s", exc)

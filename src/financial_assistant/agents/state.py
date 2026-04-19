@@ -3,6 +3,7 @@ from typing import Annotated, Any, Literal
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
+
 from financial_assistant.domain.models.analysis import AuditReport, QuantResult
 from financial_assistant.domain.models.fx import ExchangeRate
 from financial_assistant.domain.models.news import SentimentResult
@@ -41,8 +42,6 @@ BLOCKING_INTENTS: frozenset[str] = frozenset({"data_fetch"})
 ROUTING_OVERRIDES: dict[str, str] = {
     Node.UX_AGENT: Node.FX_FETCHER,
 }
-
-
 
 
 class AgentState(TypedDict):
