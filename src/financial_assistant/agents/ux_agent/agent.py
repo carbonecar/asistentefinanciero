@@ -28,7 +28,7 @@ def make_ux_node(  # type: ignore[no-untyped-def]
             bool(state.get("quant_result")),
             bool(state.get("news_results")),
             bool(state.get("market_data_result")),
-            state.get("error"),
+            state.get("errors"),
         )
         data_summary = _build_data_summary(state)
         user_message = state.get("user_message", "")
@@ -50,13 +50,13 @@ def make_ux_node(  # type: ignore[no-untyped-def]
             return {
                 "final_response": response.content,
                 "messages": [AIMessage(content=response.content)],
-                "error": None,
+                "errors": [],
             }
         except Exception as exc:
             logger.error("UX agent LLM call failed: %s", exc)
             return {
                 "final_response": "Lo siento, hubo un error al procesar tu consulta. Por favor intenta nuevamente.",
-                "error": str(exc),
+                "errors": [str(exc)],
             }
 
     return ux_node
@@ -140,8 +140,8 @@ def _build_data_summary(state: AgentState) -> str:
         if failed_entries:
             parts.append(f"SIN DATOS PARA: {', '.join(failed_entries)} — ticker inválido o fuente no disponible.")
 
-    if state.get("error"):
-        parts.append(f"INTERNAL ERROR: {state['error']}")
+    if state.get("errors"):
+        parts.append("INTERNAL ERRORS: " + " | ".join(state["errors"]))
 
     if state.get("exchange_rates"):
         parts.append("TIPO DE CAMBIO USD/ARS (dolarapi.com):")

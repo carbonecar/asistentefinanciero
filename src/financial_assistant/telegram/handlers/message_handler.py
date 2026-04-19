@@ -30,7 +30,7 @@ async def _safe_answer(target: Message, text: str) -> None:
     await target.answer(html.escape(text), parse_mode=ParseMode.HTML)
 
 
-@message_router.callback_query(F.data.startswith("intent:"))  # type: ignore[untyped-decorator]
+@message_router.callback_query(F.data.startswith("intent:"))
 async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # noqa: ANN401
     await callback.answer()
 
@@ -57,7 +57,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
         "news_results": None,
         "exchange_rates": None,
         "final_response": None,
-        "error": None,
+        "errors": [],
     }
 
     config = {"configurable": {"thread_id": str(user_id)}}
@@ -65,8 +65,8 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-        if result.get("error"):
-            logger.warning("Graph completed with error for user %s: %s", user_id, result["error"])
+        if result.get("errors"):
+            logger.warning("Graph completed with errors for user %s: %s", user_id, result["errors"])
     except Exception:  # pylint: disable=broad-exception-caught
         logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
@@ -77,7 +77,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     await _safe_answer(callback.message, response_text)
 
 
-@message_router.message(F.text)  # type: ignore[untyped-decorator]
+@message_router.message(F.text)
 async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     user_id = message.from_user.id if message.from_user else 0
 
@@ -98,7 +98,7 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
         "news_results": None,
         "exchange_rates": None,
         "final_response": None,
-        "error": None,
+        "errors": [],
     }
 
     config = {"configurable": {"thread_id": str(user_id)}}
@@ -106,8 +106,8 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-        if result.get("error"):
-            logger.warning("Graph completed with error for user %s: %s", user_id, result["error"])
+        if result.get("errors"):
+            logger.warning("Graph completed with errors for user %s: %s", user_id, result["errors"])
     except Exception:  # pylint: disable=broad-exception-caught
         logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."

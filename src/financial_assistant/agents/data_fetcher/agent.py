@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 # Tickers válidos: letras, dígitos, punto (GGAL.BA), caret (^GSPC), guion (BRK-B). Máx 20 chars.
 _TICKER_RE = re.compile(r'^[\w.\^\-]{1,20}$')
 
+_VALID_PERIODS: frozenset[str] = frozenset({
+    "1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max",
+})
+_DEFAULT_PERIOD = "1y"
+
 
 def _normalize_tickers(raw: list[str]) -> tuple[list[str], list[str]]:
     """Uppercase, strip, deduplicate and validate tickers.
@@ -42,12 +47,18 @@ def _normalize_tickers(raw: list[str]) -> tuple[list[str], list[str]]:
 def make_data_fetcher_node(market_data_service: MarketDataService):  # type: ignore[no-untyped-def]
     async def data_fetcher_node(state: AgentState) -> dict:  # type: ignore[type-arg]
         raw_tickers: list[str] = state.get("active_tickers") or []
-        period: str = state.get("period", "1y")
+        raw_period: str = state.get("period", _DEFAULT_PERIOD) or _DEFAULT_PERIOD
+        period = raw_period if raw_period in _VALID_PERIODS else _DEFAULT_PERIOD
+        if period != raw_period:
+            logger.warning(
+                "[DataFetcher] user=%s — invalid period %r, defaulting to %s",
+                state.get("user_id"), raw_period, _DEFAULT_PERIOD,
+            )
         user_id = state.get("user_id")
 
         if not raw_tickers:
             logger.warning("[DataFetcher] user=%s — no tickers in state, skipping", user_id)
-            return {"market_data_result": {}, "error": None}
+            return {"market_data_result": {}, "errors": []}
 
         tickers, rejected = _normalize_tickers(raw_tickers)
 
@@ -64,7 +75,7 @@ def make_data_fetcher_node(market_data_service: MarketDataService):  # type: ign
             )
             return {
                 "market_data_result": {},
-                "error": f"Los tickers no son válidos: {raw_tickers}",
+                "errors": [f"Los tickers no son válidos: {raw_tickers}"],
             }
 
         logger.info(
@@ -82,7 +93,7 @@ def make_data_fetcher_node(market_data_service: MarketDataService):  # type: ign
             )
             return {
                 "market_data_result": {},
-                "error": f"Error al obtener datos de mercado: {exc}",
+                "errors": [f"Error al obtener datos de mercado: {exc}"],
             }
 
         result: dict = {}  # type: ignore[type-arg]
@@ -152,6 +163,6 @@ def make_data_fetcher_node(market_data_service: MarketDataService):  # type: ign
             rejected_note = f" Tickers con formato inválido ignorados: {rejected}."
             error_msg = (error_msg + rejected_note) if error_msg else rejected_note
 
-        return {"market_data_result": result, "error": error_msg}
+        return {"market_data_result": result, "errors": [error_msg] if error_msg else []}
 
     return data_fetcher_node

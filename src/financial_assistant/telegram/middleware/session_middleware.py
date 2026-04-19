@@ -5,7 +5,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
 
-class GraphMiddleware(BaseMiddleware):  # type: ignore[misc]
+class GraphMiddleware(BaseMiddleware):
     """Injects the compiled LangGraph into every handler's data dict."""
 
     def __init__(self, graph: Any) -> None:  # noqa: ANN401

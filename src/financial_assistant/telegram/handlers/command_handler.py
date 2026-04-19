@@ -7,7 +7,7 @@ from financial_assistant.telegram.keyboards.inline_keyboards import main_menu_ke
 command_router = Router(name="commands")
 
 
-@command_router.message(Command("start"))  # type: ignore[untyped-decorator]
+@command_router.message(Command("start"))
 async def on_start(message: Message) -> None:
     name = message.from_user.first_name if message.from_user else "inversor"
     await message.answer(
@@ -22,7 +22,7 @@ async def on_start(message: Message) -> None:
     )
 
 
-@command_router.message(Command("help"))  # type: ignore[untyped-decorator]
+@command_router.message(Command("help"))
 async def on_help(message: Message) -> None:
     await message.answer(
         "Comandos disponibles:\n\n"
@@ -35,7 +35,7 @@ async def on_help(message: Message) -> None:
     )
 
 
-@command_router.message(Command("portfolio"))  # type: ignore[untyped-decorator]
+@command_router.message(Command("portfolio"))
 async def on_portfolio(message: Message, graph: object) -> None:
     await message.answer(
         'Para agregar una posición, escribime algo como:\n"Agregar 10 acciones de AAPL a $175 promedio"'

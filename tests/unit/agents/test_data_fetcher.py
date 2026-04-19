@@ -42,7 +42,7 @@ def _make_state(**kwargs) -> dict:
         "quant_result": None,
         "news_results": None,
         "final_response": None,
-        "error": None,
+        "errors": [],
     }
     base.update(kwargs)
     return base
@@ -136,7 +136,7 @@ class TestDataFetcherNode:
         node = make_data_fetcher_node(svc)
         result = await node(_make_state(active_tickers=[]))
         assert result["market_data_result"] == {}
-        assert result["error"] is None
+        assert result["errors"] == []
         svc.fetch_and_persist.assert_not_called()
 
     @pytest.mark.asyncio
@@ -145,7 +145,7 @@ class TestDataFetcherNode:
         node = make_data_fetcher_node(svc)
         result = await node(_make_state(active_tickers=None))
         assert result["market_data_result"] == {}
-        assert result["error"] is None
+        assert result["errors"] == []
         svc.fetch_and_persist.assert_not_called()
 
     @pytest.mark.asyncio
@@ -154,7 +154,7 @@ class TestDataFetcherNode:
         node = make_data_fetcher_node(svc)
         result = await node(_make_state(active_tickers=["bad!", "also bad!"]))
         assert result["market_data_result"] == {}
-        assert result["error"] is not None
+        assert result["errors"]
         svc.fetch_and_persist.assert_not_called()
 
     @pytest.mark.asyncio
@@ -174,7 +174,7 @@ class TestDataFetcherNode:
         assert md["AAPL"]["first_close"] == pytest.approx(150.0)
         assert md["AAPL"]["latest_date"] == "2024-01-02"
         assert md["AAPL"]["first_date"] == "2023-01-02"
-        assert result["error"] is None
+        assert result["errors"] == []
 
     @pytest.mark.asyncio
     async def test_ticker_with_no_data_marked_as_failed(self):
@@ -185,7 +185,7 @@ class TestDataFetcherNode:
         md = result["market_data_result"]
         assert md["GD30"]["ok"] is False
         assert md["GD30"]["latest_close"] is None
-        assert result["error"] is not None
+        assert result["errors"]
 
     @pytest.mark.asyncio
     async def test_partial_failure_sets_error_with_both_lists(self):
@@ -197,9 +197,9 @@ class TestDataFetcherNode:
         md = result["market_data_result"]
         assert md["AAPL"]["ok"] is True
         assert md["INVALID"]["ok"] is False
-        assert result["error"] is not None
-        assert "INVALID" in result["error"]
-        assert "AAPL" in result["error"]
+        assert result["errors"]
+        assert any("INVALID" in e for e in result["errors"])
+        assert any("AAPL" in e for e in result["errors"])
 
     @pytest.mark.asyncio
     async def test_service_exception_returns_error(self):
@@ -209,7 +209,7 @@ class TestDataFetcherNode:
         result = await node(_make_state(active_tickers=["AAPL"]))
 
         assert result["market_data_result"] == {}
-        assert "DB connection lost" in result["error"]
+        assert any("DB connection lost" in e for e in result["errors"])
 
     @pytest.mark.asyncio
     async def test_deduplication_before_service_call(self):
@@ -237,8 +237,8 @@ class TestDataFetcherNode:
         node = make_data_fetcher_node(svc)
         result = await node(_make_state(active_tickers=["AAPL", "MSFT"]))
 
-        assert result["error"] is not None
-        assert "AAPL" in result["error"] or "MSFT" in result["error"]
+        assert result["errors"]
+        assert any("AAPL" in e or "MSFT" in e for e in result["errors"])
 
     @pytest.mark.asyncio
     async def test_ba_ticker_failure_includes_hint(self):
@@ -246,8 +246,8 @@ class TestDataFetcherNode:
         node = make_data_fetcher_node(svc)
         result = await node(_make_state(active_tickers=["GGAL.BA"]))
 
-        assert result["error"] is not None
-        assert ".BA" in result["error"] or "BYMA" in result["error"]
+        assert result["errors"]
+        assert any(".BA" in e or "BYMA" in e for e in result["errors"])
 
     @pytest.mark.asyncio
     async def test_ba_ticker_success_no_hint(self):
@@ -256,7 +256,7 @@ class TestDataFetcherNode:
         node = make_data_fetcher_node(svc)
         result = await node(_make_state(active_tickers=["GGAL.BA"]))
 
-        assert result["error"] is None
+        assert result["errors"] == []
         assert result["market_data_result"]["GGAL.BA"]["ok"] is True
 
     @pytest.mark.asyncio
@@ -267,8 +267,8 @@ class TestDataFetcherNode:
         result = await node(_make_state(active_tickers=["AAPL", "bad!"]))
 
         assert result["market_data_result"]["AAPL"]["ok"] is True
-        assert result["error"] is not None
-        assert "bad!" in result["error"]
+        assert result["errors"]
+        assert any("bad!" in e for e in result["errors"])
 
     @pytest.mark.asyncio
     async def test_mixed_ba_and_us_failure_hint_specific(self):
@@ -277,9 +277,9 @@ class TestDataFetcherNode:
         node = make_data_fetcher_node(svc)
         result = await node(_make_state(active_tickers=["AAPL", "GD30.BA"]))
 
-        assert result["error"] is not None
-        assert "GD30.BA" in result["error"]
-        assert "AAPL" in result["error"]
+        assert result["errors"]
+        assert any("GD30.BA" in e for e in result["errors"])
+        assert any("AAPL" in e for e in result["errors"])
 
 
 # ---------------------------------------------------------------------------

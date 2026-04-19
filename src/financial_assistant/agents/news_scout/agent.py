@@ -19,15 +19,18 @@ def make_news_scout_node(news_service: NewsService):  # type: ignore[no-untyped-
             )
             return {
                 "news_results": [],
-                "error": "No se detectaron tickers en el mensaje. Mencioná el ticker específico (ej: AAPL, GGAL.BA).",
+                "errors": [
+                    "No se detectaron tickers en el mensaje. "
+                    "Mencioná el ticker específico (ej: AAPL, GGAL.BA)."
+                ],
             }
 
         try:
             query = NewsQuery(tickers=tickers)
             results = await news_service.analyze_sentiment(query)
-            return {"news_results": results, "error": None}
+            return {"news_results": results, "errors": []}
         except Exception as exc:
             logger.error("NewsScout failed: %s", exc)
-            return {"news_results": [], "error": str(exc)}
+            return {"news_results": [], "errors": [str(exc)]}
 
     return news_scout_node
