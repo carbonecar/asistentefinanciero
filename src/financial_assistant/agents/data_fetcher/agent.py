@@ -7,8 +7,8 @@ from financial_assistant.application.services.market_data_service import MarketD
 
 logger = logging.getLogger(__name__)
 
-# Tickers válidos: letras, dígitos, punto (GGAL.BA) y caret (^GSPC). Máx 20 chars.
-_TICKER_RE = re.compile(r'^[\w.\^]{1,20}$')
+# Tickers válidos: letras, dígitos, punto (GGAL.BA), caret (^GSPC), guion (BRK-B). Máx 20 chars.
+_TICKER_RE = re.compile(r'^[\w.\^\-]{1,20}$')
 
 
 def _normalize_tickers(raw: list[str]) -> tuple[list[str], list[str]]:
@@ -111,10 +111,10 @@ def make_data_fetcher_node(market_data_service: MarketDataService):  # type: ign
                 }
                 failed.append(ticker)
 
-        if failed:
-            ba_failed = [t for t in failed if t.endswith(".BA")]
-            non_ba_failed = [t for t in failed if not t.endswith(".BA")]
+        ba_failed = [t for t in failed if t.endswith(".BA")]
+        non_ba_failed = [t for t in failed if not t.endswith(".BA")]
 
+        if failed:
             if ba_failed:
                 logger.warning(
                     "[DataFetcher] user=%s — no data for Argentine tickers: %s "
@@ -134,14 +134,12 @@ def make_data_fetcher_node(market_data_service: MarketDataService):  # type: ign
         )
 
         if not successful:
-            ba_failed = [t for t in failed if t.endswith(".BA")]
             hint = (
                 f" Tickers argentinos ({ba_failed}): verificá que estén en BYMA con el sufijo .BA correcto."
                 if ba_failed else ""
             )
             error_msg = f"No se obtuvieron datos para ningún ticker: {failed}.{hint}"
         elif failed:
-            ba_failed = [t for t in failed if t.endswith(".BA")]
             hint = (
                 f" Tickers argentinos sin datos ({ba_failed}): verificá el sufijo .BA."
                 if ba_failed else ""
@@ -149,6 +147,10 @@ def make_data_fetcher_node(market_data_service: MarketDataService):  # type: ign
             error_msg = f"Sin datos para: {failed}. Descargados correctamente: {successful}.{hint}"
         else:
             error_msg = None
+
+        if rejected:
+            rejected_note = f" Tickers con formato inválido ignorados: {rejected}."
+            error_msg = (error_msg + rejected_note) if error_msg else rejected_note
 
         return {"market_data_result": result, "error": error_msg}
 

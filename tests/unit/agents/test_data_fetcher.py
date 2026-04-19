@@ -33,7 +33,7 @@ def _make_state(**kwargs) -> dict:
         "user_id": 42,
         "user_message": "test",
         "messages": [],
-        "intent": "data_fetch",
+        "intents": ["data_fetch"],
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
@@ -118,6 +118,11 @@ class TestNormalizeTickers:
         valid, rejected = _normalize_tickers(["AAPL", "bad ticker!", "GD30"])
         assert valid == ["AAPL", "GD30"]
         assert len(rejected) == 1
+
+    def test_hyphenated_ticker(self):
+        valid, rejected = _normalize_tickers(["BRK-B"])
+        assert valid == ["BRK-B"]
+        assert rejected == []
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +258,17 @@ class TestDataFetcherNode:
 
         assert result["error"] is None
         assert result["market_data_result"]["GGAL.BA"]["ok"] is True
+
+    @pytest.mark.asyncio
+    async def test_rejected_tickers_reported_when_others_succeed(self):
+        records = [_make_ohlcv("AAPL", 175.0)]
+        svc = _make_service({"AAPL": records})
+        node = make_data_fetcher_node(svc)
+        result = await node(_make_state(active_tickers=["AAPL", "bad!"]))
+
+        assert result["market_data_result"]["AAPL"]["ok"] is True
+        assert result["error"] is not None
+        assert "bad!" in result["error"]
 
     @pytest.mark.asyncio
     async def test_mixed_ba_and_us_failure_hint_specific(self):
