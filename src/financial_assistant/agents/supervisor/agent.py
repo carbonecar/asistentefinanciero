@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from langchain_core.messages import SystemMessage
 
@@ -36,8 +37,8 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
                     "period": args.get("period", "1y"),
                     "use_sentiment": args.get("use_sentiment", False),
                 }
-        except Exception as exc:
-            logger.warning("Supervisor LLM call failed: %s", exc)
+        except Exception:
+            logger.error("Supervisor LLM call failed — routing to 'general':\n%s", traceback.format_exc())
 
         return {
             "intents": ["general"],

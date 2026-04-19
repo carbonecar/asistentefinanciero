@@ -25,7 +25,7 @@ EXAMPLES:
 - "tengo 1000 USD en AAPL y 500 en GD30" → ["data_fetch"], tickers=["AAPL","GD30"]
 - "agregá MSFT a mi cartera" → ["data_fetch"], tickers=["MSFT"]
 - "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]
-- "tengo 1000 dólares invertidos en AAPL" → ["data_fetch","audit"], tickers=["AAPL"]  
+- "tengo 1000 dólares invertidos en AAPL" → ["data_fetch","audit"], tickers=["AAPL"]
     (question about current value implies audit)
 - "cuánto vale mi inversión en AAPL?" → ["data_fetch","audit"], tickers=["AAPL"]
 - "qué es el índice Sharpe?" → ["general"]

@@ -8,10 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
+COPY src ./src
 RUN pip install --no-cache-dir -e .
 
 COPY alembic.ini ./
-COPY alembic/ ./alembic/
-COPY src/ ./src/
+COPY alembic ./alembic
 
 CMD ["python", "-m", "financial_assistant.main"]

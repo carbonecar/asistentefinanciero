@@ -15,9 +15,9 @@ def make_auditor_node(audit_service: AuditService):  # type: ignore[no-untyped-d
         try:
             query = AuditPortfolioQuery(user_id=user_id, period=period)
             report = await audit_service.audit(query)
-            return {"audit_report": report, "error": None}
+            return {"audit_report": report, "errors": []}
         except Exception as exc:
             logger.error("Auditor failed for user %s: %s", user_id, exc)
-            return {"audit_report": None, "error": str(exc)}
+            return {"audit_report": None, "errors": [str(exc)]}
 
     return auditor_node

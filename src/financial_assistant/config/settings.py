@@ -33,13 +33,13 @@ class Settings(BaseSettings):
     # NewsAPI
     newsapi_key: str = ""
 
+    # DB
+    sql_echo: bool = False  # set SQL_ECHO=true to log all SQL statements
+
     # Agent tuning
     sentiment_lambda: float = 0.15
     monte_carlo_simulations: int = 5000
     monte_carlo_horizon_days: int = 252
-
-    # DB
-    sql_echo: bool = False  # set SQL_ECHO=true to log all SQL statements
 
     # LangSmith tracing
     langchain_tracing_v2: bool = False

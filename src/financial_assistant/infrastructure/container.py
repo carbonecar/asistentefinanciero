@@ -45,7 +45,7 @@ class Container:
         # Application services
         self.portfolio_service = PortfolioService(portfolio_repo)
         market_data_service = MarketDataService(market_gateway, market_data_repo)
-        audit_service = AuditService(portfolio_repo, market_gateway)
+        audit_service = AuditService(portfolio_repo, market_gateway, market_data_repo)
 
         optimizer = PortfolioOptimizer(sentiment_lambda=settings.sentiment_lambda)
         simulator = MonteCarloSimulator(

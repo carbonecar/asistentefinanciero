@@ -4,6 +4,7 @@ Soporta: openai | ollama
 """
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from pydantic import SecretStr
 
 
 def make_llm(
@@ -37,6 +38,6 @@ def make_llm(
 
     return ChatOpenAI(
         model=model,
-        api_key=api_key,  # type: ignore[arg-type]
+        api_key=SecretStr(api_key) if api_key else None,
         temperature=temperature,
     )

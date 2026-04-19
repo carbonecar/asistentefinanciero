@@ -1,3 +1,4 @@
+import operator
 from typing import Annotated, Any, Literal
 
 from langchain_core.messages import BaseMessage
@@ -65,4 +66,4 @@ class AgentState(TypedDict):
 
     # ---- Final ----
     final_response: str | None
-    error: str | None
+    errors: Annotated[list[str], operator.add]

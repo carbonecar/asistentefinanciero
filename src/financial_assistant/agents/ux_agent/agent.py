@@ -20,6 +20,16 @@ def make_ux_node(  # type: ignore[no-untyped-def]
     llm = make_llm(provider=provider, model=model, temperature=0.3, api_key=api_key, base_url=base_url)
 
     async def ux_node(state: AgentState) -> dict:  # type: ignore[type-arg]
+        logger.info(
+            "[UX] intents=%s user=%s has_audit=%s has_quant=%s has_news=%s has_market=%s error=%r",
+            state.get("intents"),
+            state.get("user_id"),
+            bool(state.get("audit_report")),
+            bool(state.get("quant_result")),
+            bool(state.get("news_results")),
+            bool(state.get("market_data_result")),
+            state.get("errors"),
+        )
         data_summary = _build_data_summary(state)
         user_message = state.get("user_message", "")
 
@@ -40,13 +50,13 @@ def make_ux_node(  # type: ignore[no-untyped-def]
             return {
                 "final_response": response.content,
                 "messages": [AIMessage(content=response.content)],
-                "error": None,
+                "errors": [],
             }
         except Exception as exc:
             logger.error("UX agent LLM call failed: %s", exc)
             return {
                 "final_response": "Lo siento, hubo un error al procesar tu consulta. Por favor intenta nuevamente.",
-                "error": str(exc),
+                "errors": [str(exc)],
             }
 
     return ux_node
@@ -54,6 +64,7 @@ def make_ux_node(  # type: ignore[no-untyped-def]
 
 def _build_data_summary(state: AgentState) -> str:
     parts: list[str] = []
+    intents = state["intents"]
 
     if state.get("audit_report"):
         report = state["audit_report"]
@@ -68,6 +79,8 @@ def _build_data_summary(state: AgentState) -> str:
             parts.append(f"  Top performer: {report.top_performer}")
         if report.worst_performer:
             parts.append(f"  Worst performer: {report.worst_performer}")
+    elif "audit" in intents:
+        parts.append("AUDIT STATUS: El portfolio está vacío. El usuario no tiene posiciones registradas.")
 
     if state.get("quant_result"):
         qr = state["quant_result"]
@@ -91,6 +104,8 @@ def _build_data_summary(state: AgentState) -> str:
                 f"Pessimistic ${final_p5:,.0f} | "
                 f"Optimistic ${final_p95:,.0f}"
             )
+    elif "optimize" in intents:
+        parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
     if state.get("news_results"):
         parts.append("NEWS SENTIMENT:")
@@ -100,13 +115,33 @@ def _build_data_summary(state: AgentState) -> str:
             )
             for headline in result.representative_headlines:
                 parts.append(f"    - {headline}")
+    elif "news" in intents:
+        parts.append(
+            "NEWS STATUS: No se obtuvieron noticias. "
+            "Posibles causas: NEWSAPI_KEY no configurada, o no se detectaron tickers en el mensaje."
+        )
 
     if state.get("market_data_result"):
         md = state["market_data_result"]
-        parts.append("MARKET DATA FETCHED:")
-        for ticker, info in md.items():
-            if info.get("latest_close"):
-                parts.append(f"  {ticker}: ${info['latest_close']:.2f} ({info['records_count']} records)")
+        ok_entries = {t: i for t, i in md.items() if i.get("ok") is not False and i.get("latest_close")}
+        failed_entries = [t for t, i in md.items() if not i.get("latest_close")]
+        if ok_entries:
+            parts.append("MARKET DATA FETCHED:")
+            for ticker, info in ok_entries.items():
+                date_range = (
+                    f" [{info['first_date']} → {info['latest_date']}]"
+                    if info.get("first_date") and info.get("latest_date")
+                    else ""
+                )
+                parts.append(
+                    f"  {ticker}: ${info['latest_close']:.2f} "
+                    f"({info['records_count']} records{date_range})"
+                )
+        if failed_entries:
+            parts.append(f"SIN DATOS PARA: {', '.join(failed_entries)} — ticker inválido o fuente no disponible.")
+
+    if state.get("errors"):
+        parts.append("INTERNAL ERRORS: " + " | ".join(state["errors"]))
 
     if state.get("exchange_rates"):
         parts.append("TIPO DE CAMBIO USD/ARS (dolarapi.com):")

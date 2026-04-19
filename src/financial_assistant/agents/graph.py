@@ -25,7 +25,7 @@ UNSUPPORTED_RESPONSE = (
 
 async def unsupported_node(state: AgentState) -> dict:  # type: ignore[type-arg]
     logger.info("[GRAPH] unsupported → END. State: %s", state)
-    return {"final_response": UNSUPPORTED_RESPONSE, "error": None}
+    return {"final_response": UNSUPPORTED_RESPONSE, "errors": []}
 
 
 def _resolve(intent: str) -> str:

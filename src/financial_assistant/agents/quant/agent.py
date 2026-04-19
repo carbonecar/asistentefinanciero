@@ -16,9 +16,9 @@ def make_quant_node(quant_service: QuantService):  # type: ignore[no-untyped-def
         try:
             query = OptimizePortfolioQuery(user_id=user_id, use_sentiment=use_sentiment)
             result = await quant_service.optimize(query, sentiment_results=news_results)
-            return {"quant_result": result, "error": None}
+            return {"quant_result": result, "errors": []}
         except Exception as exc:
             logger.error("Quant failed for user %s: %s", user_id, exc)
-            return {"quant_result": None, "error": str(exc)}
+            return {"quant_result": None, "errors": [str(exc)]}
 
     return quant_node
