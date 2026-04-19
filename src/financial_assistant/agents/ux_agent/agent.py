@@ -21,8 +21,8 @@ def make_ux_node(  # type: ignore[no-untyped-def]
 
     async def ux_node(state: AgentState) -> dict:  # type: ignore[type-arg]
         logger.info(
-            "[UX] intent=%s user=%s has_audit=%s has_quant=%s has_news=%s has_market=%s error=%r",
-            state.get("intent"),
+            "[UX] intents=%s user=%s has_audit=%s has_quant=%s has_news=%s has_market=%s error=%r",
+            state.get("intents"),
             state.get("user_id"),
             bool(state.get("audit_report")),
             bool(state.get("quant_result")),
@@ -64,7 +64,7 @@ def make_ux_node(  # type: ignore[no-untyped-def]
 
 def _build_data_summary(state: AgentState) -> str:
     parts: list[str] = []
-    intent = state.get("intent", "")
+    intents = state["intents"]
 
     if state.get("audit_report"):
         report = state["audit_report"]
@@ -79,7 +79,7 @@ def _build_data_summary(state: AgentState) -> str:
             parts.append(f"  Top performer: {report.top_performer}")
         if report.worst_performer:
             parts.append(f"  Worst performer: {report.worst_performer}")
-    elif intent == "audit":
+    elif "audit" in intents:
         parts.append("AUDIT STATUS: El portfolio está vacío. El usuario no tiene posiciones registradas.")
 
     if state.get("quant_result"):
@@ -104,7 +104,7 @@ def _build_data_summary(state: AgentState) -> str:
                 f"Pessimistic ${final_p5:,.0f} | "
                 f"Optimistic ${final_p95:,.0f}"
             )
-    elif intent == "optimize":
+    elif "optimize" in intents:
         parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
     if state.get("news_results"):
@@ -115,8 +115,11 @@ def _build_data_summary(state: AgentState) -> str:
             )
             for headline in result.representative_headlines:
                 parts.append(f"    - {headline}")
-    elif intent == "news":
-        parts.append("NEWS STATUS: No se obtuvieron noticias. Posibles causas: NEWSAPI_KEY no configurada, o no se detectaron tickers en el mensaje.")
+    elif "news" in intents:
+        parts.append(
+            "NEWS STATUS: No se obtuvieron noticias. "
+            "Posibles causas: NEWSAPI_KEY no configurada, o no se detectaron tickers en el mensaje."
+        )
 
     if state.get("market_data_result"):
         md = state["market_data_result"]

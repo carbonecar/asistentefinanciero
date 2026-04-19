@@ -17,7 +17,10 @@ def make_news_scout_node(news_service: NewsService):  # type: ignore[no-untyped-
                 state.get("user_id"),
                 state.get("user_message", ""),
             )
-            return {"news_results": [], "error": "No se detectaron tickers en el mensaje. Mencioná el ticker específico (ej: AAPL, GGAL.BA)."}
+            return {
+                "news_results": [],
+                "error": "No se detectaron tickers en el mensaje. Mencioná el ticker específico (ej: AAPL, GGAL.BA).",
+            }
 
         try:
             query = NewsQuery(tickers=tickers)

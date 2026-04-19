@@ -44,7 +44,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
         "user_id": user_id,
         "user_message": user_message,
         "messages": [HumanMessage(content=user_message)],
-        "intent": intent,
+        "intents": [intent],  # type: ignore[list-item]
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
@@ -84,7 +84,7 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
         "user_id": user_id,
         "user_message": message.text or "",
         "messages": [HumanMessage(content=message.text or "")],
-        "intent": "",
+        "intents": [],
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
