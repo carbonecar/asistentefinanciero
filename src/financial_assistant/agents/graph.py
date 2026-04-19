@@ -29,7 +29,7 @@ async def unsupported_node(state: AgentState) -> dict:  # type: ignore[type-arg]
 
 
 def _resolve(intent: str) -> str:
-    node = NODE_FOR_INTENT.get(intent, Node.UNSUPPORTED)
+    node: str = NODE_FOR_INTENT.get(intent, Node.UNSUPPORTED)
     return ROUTING_OVERRIDES.get(node, node)
 
 

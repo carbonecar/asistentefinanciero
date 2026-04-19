@@ -8,7 +8,7 @@ class TextBlobSentimentAnalyzer:
     """
 
     def score(self, ticker: str, articles: list[NewsArticle]) -> SentimentResult:
-        from textblob import TextBlob  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
+        from textblob import TextBlob
 
         scores: list[float] = []
         for article in articles:

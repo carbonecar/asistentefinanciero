@@ -23,4 +23,4 @@ class MarketDataService:
         return results
 
     async def get_benchmark(self, benchmark: str = "SPY") -> list[OHLCV]:
-        return await self._gateway.fetch_benchmark(benchmark)  # type: ignore[arg-type]
+        return await self._gateway.fetch_benchmark(benchmark)

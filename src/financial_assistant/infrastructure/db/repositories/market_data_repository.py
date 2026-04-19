@@ -10,7 +10,7 @@ from financial_assistant.domain.ports.repositories import IMarketDataRepository
 from financial_assistant.infrastructure.db.models import OHLCVRecordORM
 
 
-class PostgresMarketDataRepository(IMarketDataRepository):
+class PostgresMarketDataRepository(IMarketDataRepository):  # type: ignore[misc]
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
 

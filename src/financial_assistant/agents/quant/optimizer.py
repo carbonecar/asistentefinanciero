@@ -41,7 +41,7 @@ class PortfolioOptimizer:
         except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    def _apply_sentiment(self, mu: "pd.Series", sentiment_map: dict[str, float]) -> "pd.Series":  # type: ignore[name-defined]
+    def _apply_sentiment(self, mu: "pd.Series", sentiment_map: dict[str, float]) -> "pd.Series":
         adjusted = mu.copy()
         for ticker, score in sentiment_map.items():
             if ticker in adjusted.index:
