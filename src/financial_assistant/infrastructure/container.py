@@ -31,7 +31,7 @@ class Container:
         self.settings = settings
 
         # DB
-        engine = build_engine(settings.effective_postgres_dsn)
+        engine = build_engine(settings.effective_postgres_dsn, echo=settings.sql_echo)
         session_factory = build_session_factory(engine)
 
         # Repositories

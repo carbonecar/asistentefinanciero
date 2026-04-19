@@ -5,6 +5,7 @@ from decimal import Decimal
 from functools import partial
 from typing import Literal
 
+import pandas as pd
 import yfinance as yf
 
 from financial_assistant.domain.models.market_data import OHLCV
@@ -52,6 +53,9 @@ class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
                     ticker, period,
                 )
                 return []
+            # yfinance >= 0.2 returns MultiIndex columns when downloading a single ticker
+            if isinstance(data.columns, pd.MultiIndex):
+                data.columns = data.columns.get_level_values(0)
             records: list[OHLCV] = []
             for idx, row in data.iterrows():
                 records.append(

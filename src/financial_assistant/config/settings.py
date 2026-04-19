@@ -33,6 +33,9 @@ class Settings(BaseSettings):  # type: ignore[misc]
     # NewsAPI
     newsapi_key: str = ""
 
+    # DB
+    sql_echo: bool = False  # set SQL_ECHO=true to log all SQL statements
+
     # Agent tuning
     sentiment_lambda: float = 0.15
     monte_carlo_simulations: int = 5000
