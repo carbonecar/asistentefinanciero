@@ -3,7 +3,7 @@ import logging
 from langchain_core.messages import SystemMessage
 
 from financial_assistant.agents.llm_factory import make_llm
-from financial_assistant.agents.state import AgentState
+from financial_assistant.agents.state import AgentState, VALID_INTENTS
 from financial_assistant.agents.supervisor.prompts import CLASSIFY_INTENT_SCHEMA, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -18,8 +18,6 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
     llm = make_llm(provider=provider, model=model, temperature=0, api_key=api_key, base_url=base_url)
     llm_with_tools = llm.bind_tools([{"type": "function", "function": CLASSIFY_INTENT_SCHEMA}])
 
-    _valid_intents = {"audit", "optimize", "news", "data_fetch", "general", "unsupported"}
-
     async def supervisor_node(state: AgentState) -> dict:  # type: ignore[type-arg]
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
         try:
@@ -27,12 +25,13 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
             tool_calls = getattr(response, "tool_calls", [])
             if tool_calls:
                 args = tool_calls[0]["args"]
-                intent = args.get("intent", "general")
-                if intent not in _valid_intents:
-                    logger.warning("Supervisor returned unknown intent %r, defaulting to 'general'", intent)
-                    intent = "general"
+                raw = args.get("intents", ["general"])
+                intents = [i for i in raw if i in VALID_INTENTS]
+                if not intents:
+                    logger.warning("Supervisor returned no valid intents from %r, defaulting to ['general']", raw)
+                    intents = ["general"]
                 return {
-                    "intent": intent,
+                    "intents": intents,
                     "active_tickers": [t.upper() for t in args.get("tickers", [])],
                     "period": args.get("period", "1y"),
                     "use_sentiment": args.get("use_sentiment", False),
@@ -41,7 +40,7 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
             logger.warning("Supervisor LLM call failed: %s", exc)
 
         return {
-            "intent": "general",
+            "intents": ["general"],
             "active_tickers": [],
             "period": "1y",
             "use_sentiment": False,
