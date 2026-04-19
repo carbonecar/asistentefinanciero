@@ -42,11 +42,7 @@ def make_ux_node(  # type: ignore[no-untyped-def]
             data_summary=data_summary,
         )
 
-        messages = (
-            [SystemMessage(content=SYNTHESIS_SYSTEM_PROMPT)]
-            + history
-            + [HumanMessage(content=current_prompt)]
-        )
+        messages = [SystemMessage(content=SYNTHESIS_SYSTEM_PROMPT)] + history + [HumanMessage(content=current_prompt)]
 
         try:
             response = await llm.ainvoke(messages)
@@ -115,8 +111,7 @@ def _build_data_summary(state: AgentState) -> str:
         parts.append("NEWS SENTIMENT:")
         for result in state["news_results"]:
             parts.append(
-                f"  {result.ticker}: {result.label} (score: {result.score:+.3f}, "
-                f"{result.article_count} articles)"
+                f"  {result.ticker}: {result.label} (score: {result.score:+.3f}, {result.article_count} articles)"
             )
             for headline in result.representative_headlines:
                 parts.append(f"    - {headline}")

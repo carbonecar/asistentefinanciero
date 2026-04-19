@@ -13,9 +13,7 @@ def mock_repo():
     repo = AsyncMock()
     repo.get_by_user_id.return_value = Portfolio(
         user_id=1,
-        positions=[
-            Position("AAPL", AssetType.STOCK, Decimal("10"), Decimal("150"))
-        ],
+        positions=[Position("AAPL", AssetType.STOCK, Decimal("10"), Decimal("150"))],
     )
     return repo
 

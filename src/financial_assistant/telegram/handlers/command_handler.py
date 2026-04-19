@@ -29,15 +29,14 @@ async def on_help(message: Message) -> None:
         "/start — Menú principal\n"
         "/help — Esta ayuda\n\n"
         "También podés escribirme directamente, por ejemplo:\n"
-        "\"Cómo le fue a mi cartera este año?\"\n"
-        "\"Optimizá mi portfolio con sentimiento\"\n"
-        "\"Qué dicen las noticias sobre AAPL y MSFT?\""
+        '"Cómo le fue a mi cartera este año?"\n'
+        '"Optimizá mi portfolio con sentimiento"\n'
+        '"Qué dicen las noticias sobre AAPL y MSFT?"'
     )
 
 
 @command_router.message(Command("portfolio"))
 async def on_portfolio(message: Message, graph: object) -> None:
     await message.answer(
-        "Para agregar una posición, escribime algo como:\n"
-        "\"Agregar 10 acciones de AAPL a $175 promedio\""
+        'Para agregar una posición, escribime algo como:\n"Agregar 10 acciones de AAPL a $175 promedio"'
     )

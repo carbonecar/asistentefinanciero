@@ -12,6 +12,7 @@ from financial_assistant.application.services.news_service import NewsService
 from financial_assistant.application.services.portfolio_service import PortfolioService
 from financial_assistant.application.services.quant_service import QuantService
 from financial_assistant.config.settings import Settings
+from financial_assistant.domain.models.analysis import OptimizedWeights
 from financial_assistant.infrastructure.db.engine import build_engine, build_session_factory
 from financial_assistant.infrastructure.db.repositories.market_data_repository import (
     PostgresMarketDataRepository,
@@ -46,9 +47,7 @@ class Container:
         market_data_service = MarketDataService(market_gateway, market_data_repo)
         audit_service = AuditService(portfolio_repo, market_gateway)
 
-        optimizer = PortfolioOptimizer(
-            sentiment_lambda=settings.sentiment_lambda
-        )
+        optimizer = PortfolioOptimizer(sentiment_lambda=settings.sentiment_lambda)
         simulator = MonteCarloSimulator(
             n_simulations=settings.monte_carlo_simulations,
             horizon_days=settings.monte_carlo_horizon_days,
@@ -61,13 +60,11 @@ class Container:
 
         class _SimulatorAdapter:
             def simulate(self, weights: object, ohlcv_by_ticker: dict, initial_value: float) -> object:  # type: ignore[type-arg]
-                from financial_assistant.domain.models.analysis import OptimizedWeights  # pylint: disable=import-outside-toplevel
+
                 assert isinstance(weights, OptimizedWeights)
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
 
-        quant_service = QuantService(
-            portfolio_repo, market_gateway, _OptimizerAdapter(), _SimulatorAdapter()
-        )
+        quant_service = QuantService(portfolio_repo, market_gateway, _OptimizerAdapter(), _SimulatorAdapter())
         news_service = NewsService(news_gateway, TextBlobSentimentAnalyzer())
         fx_gateway = DolarApiGateway()
 

@@ -6,13 +6,14 @@ from financial_assistant.domain.ports.news_gateway import INewsGateway
 
 
 class SentimentAnalyzerProtocol(Protocol):
-    '''
+    """
     Protocol for sentiment analysis of news articles related to financial assets.
     This interface is for checking the sentiment analysis signture
-    Nobody implements this directrly. mypy will check that the actual implementation (e.g. TextBlobSentimentAnalyzer) matches this protocol.
-    '''
-    def score(self, ticker: str, articles: list[NewsArticle]) -> SentimentResult:
-        ...
+    Nobody implements this directrly. mypy will check that the actual implementation
+    (e.g. TextBlobSentimentAnalyzer) matches this protocol.
+    """
+
+    def score(self, ticker: str, articles: list[NewsArticle]) -> SentimentResult: ...
 
 
 class NewsService:

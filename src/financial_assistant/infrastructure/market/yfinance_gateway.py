@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
-class YFinanceGateway(IMarketDataGateway):
+class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
     """Adapter that wraps yfinance (sync) and exposes async interface.
 
     fetch_ohlcv enforces a per-ticker timeout so a hanging yfinance call
@@ -39,9 +39,7 @@ class YFinanceGateway(IMarketDataGateway):
             )
             return []
 
-    async def fetch_benchmark(
-        self, benchmark: Literal["SPY", "^GSPC", "GC=F"]
-    ) -> list[OHLCV]:
+    async def fetch_benchmark(self, benchmark: Literal["SPY", "^GSPC", "GC=F"]) -> list[OHLCV]:
         return await self.fetch_ohlcv(benchmark, period="1y")
 
     def _fetch_sync(self, ticker: str, period: str) -> list[OHLCV]:
