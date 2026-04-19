@@ -48,8 +48,8 @@ class PortfolioOptimizer:
                 adjusted[ticker] = adjusted[ticker] * (1 + self._lambda * score)
         return adjusted
 
-    def _build_prices_df(self, ohlcv_by_ticker: dict[str, list[OHLCV]]) -> "pd.DataFrame":  # type: ignore[name-defined]
-        series: dict[str, pd.Series] = {}  # type: ignore[name-defined]
+    def _build_prices_df(self, ohlcv_by_ticker: dict[str, list[OHLCV]]) -> "pd.DataFrame":
+        series: dict[str, pd.Series] = {}
         for ticker, records in ohlcv_by_ticker.items():
             if records:
                 series[ticker] = pd.Series({r.date: float(r.close) for r in records}, name=ticker)

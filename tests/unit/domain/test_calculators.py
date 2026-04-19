@@ -1,13 +1,13 @@
 from datetime import date
 from decimal import Decimal
 
-from financial_assistant.agents.auditor.calculators import (
+from financial_assistant.domain.models.market_data import OHLCV
+from financial_assistant.domain.models.portfolio import AssetType, Portfolio, Position
+from financial_assistant.domain.services.calculators import (
     compute_ohlcv_return,
     compute_opportunity_cost,
     compute_portfolio_return,
 )
-from financial_assistant.domain.models.market_data import OHLCV
-from financial_assistant.domain.models.portfolio import AssetType, Portfolio, Position
 
 
 def make_ohlcv(ticker: str, start_close: float, end_close: float) -> list[OHLCV]:

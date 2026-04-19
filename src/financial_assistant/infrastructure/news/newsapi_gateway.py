@@ -6,7 +6,7 @@ from financial_assistant.domain.models.news import NewsArticle
 from financial_assistant.domain.ports.news_gateway import INewsGateway
 
 
-class NewsAPIGateway(INewsGateway):
+class NewsAPIGateway(INewsGateway):  # type: ignore[misc]
     """Adapter for newsapi.org — wraps sync client in thread executor."""
 
     def __init__(self, api_key: str) -> None:
