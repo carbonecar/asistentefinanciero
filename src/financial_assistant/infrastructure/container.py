@@ -23,7 +23,7 @@ from financial_assistant.infrastructure.fx.dolarapi_gateway import DolarApiGatew
 from financial_assistant.infrastructure.market.yfinance_gateway import YFinanceGateway
 from financial_assistant.infrastructure.news.newsapi_gateway import NewsAPIGateway
 from financial_assistant.infrastructure.nlp.sentiment_analyzer import TextBlobSentimentAnalyzer
-
+from financial_assistant.domain.models.analysis import (OptimizedWeights)
 
 class Container:
     def __init__(self, settings: Settings) -> None:  # pylint: disable=too-many-locals
@@ -58,10 +58,8 @@ class Container:
                 return optimizer.minimum_variance(ohlcv_by_ticker, sentiment_map)
 
         class _SimulatorAdapter:
-            def simulate(self, weights: object, ohlcv_by_ticker: dict, initial_value: float) -> object:  # type: ignore[type-arg]
-                from financial_assistant.domain.models.analysis import (
-                    OptimizedWeights,  # pylint: disable=import-outside-toplevel
-                )
+            def simulate(self, weights: object, ohlcv_by_ticker: dict,
+                         initial_value: float) -> object:  # type: ignore[type-arg]
 
                 assert isinstance(weights, OptimizedWeights)
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
