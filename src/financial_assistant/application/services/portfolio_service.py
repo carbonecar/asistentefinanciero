@@ -25,7 +25,7 @@ class PortfolioService:
         )
         await self._repository.upsert_position(cmd.user_id, position)
         portfolio = await self._repository.get_by_user_id(cmd.user_id)
-        return portfolio  # type: ignore[return-value]
+        return portfolio
 
     async def remove_position(self, user_id: int, ticker: str) -> None:
         await self._repository.delete_position(user_id, ticker)

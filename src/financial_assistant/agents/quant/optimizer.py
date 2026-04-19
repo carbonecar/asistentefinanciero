@@ -1,4 +1,5 @@
 import pandas as pd
+from pypfopt import EfficientFrontier, expected_returns, risk_models
 
 from financial_assistant.domain.models.analysis import OptimizedWeights
 from financial_assistant.domain.models.market_data import OHLCV
@@ -14,7 +15,6 @@ class PortfolioOptimizer:
         ohlcv_by_ticker: dict[str, list[OHLCV]],
         sentiment_map: dict[str, float] | None = None,
     ) -> OptimizedWeights | None:
-        from pypfopt import EfficientFrontier, expected_returns, risk_models  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
 
         prices_df = self._build_prices_df(ohlcv_by_ticker)
         if prices_df.empty or len(prices_df.columns) < 2:
@@ -41,20 +41,18 @@ class PortfolioOptimizer:
         except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    def _apply_sentiment(self, mu: "pd.Series", sentiment_map: dict[str, float]) -> "pd.Series":  # type: ignore[name-defined]
+    def _apply_sentiment(self, mu: "pd.Series", sentiment_map: dict[str, float]) -> "pd.Series":
         adjusted = mu.copy()
         for ticker, score in sentiment_map.items():
             if ticker in adjusted.index:
                 adjusted[ticker] = adjusted[ticker] * (1 + self._lambda * score)
         return adjusted
 
-    def _build_prices_df(self, ohlcv_by_ticker: dict[str, list[OHLCV]]) -> "pd.DataFrame":  # type: ignore[name-defined]
-        series: dict[str, "pd.Series"] = {}  # type: ignore[name-defined]
+    def _build_prices_df(self, ohlcv_by_ticker: dict[str, list[OHLCV]]) -> "pd.DataFrame":
+        series: dict[str, pd.Series] = {}
         for ticker, records in ohlcv_by_ticker.items():
             if records:
-                series[ticker] = pd.Series(
-                    {r.date: float(r.close) for r in records}, name=ticker
-                )
+                series[ticker] = pd.Series({r.date: float(r.close) for r in records}, name=ticker)
         if not series:
             return pd.DataFrame()
         df = pd.DataFrame(series).sort_index()

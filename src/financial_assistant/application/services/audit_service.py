@@ -1,12 +1,12 @@
-from financial_assistant.domain.services.calculators import (
-    compute_ohlcv_return,
-    compute_portfolio_return,
-)
 from financial_assistant.application.dtos.requests import AuditPortfolioQuery
 from financial_assistant.domain.models.analysis import AuditReport, BenchmarkComparison
 from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
 from financial_assistant.domain.ports.repositories import IPortfolioRepository
+from financial_assistant.domain.services.calculators import (
+    compute_ohlcv_return,
+    compute_portfolio_return,
+)
 
 
 class AuditService:
@@ -30,11 +30,7 @@ class AuditService:
 
         sp500 = await self._market_gateway.fetch_benchmark("^GSPC")
 
-        latest_prices = {
-            ticker: records[-1].close
-            for ticker, records in market_data.items()
-            if records
-        }
+        latest_prices = {ticker: records[-1].close for ticker, records in market_data.items() if records}
         portfolio_return = compute_portfolio_return(portfolio, latest_prices)
         sp500_return = compute_ohlcv_return(sp500)
 
@@ -43,9 +39,7 @@ class AuditService:
         ]
 
         returns_by_ticker = {
-            ticker: compute_ohlcv_return(records)
-            for ticker, records in market_data.items()
-            if records
+            ticker: compute_ohlcv_return(records) for ticker, records in market_data.items() if records
         }
         top = max(returns_by_ticker, key=lambda t: returns_by_ticker[t], default="")
         worst = min(returns_by_ticker, key=lambda t: returns_by_ticker[t], default="")
@@ -58,4 +52,3 @@ class AuditService:
             top_performer=top,
             worst_performer=worst,
         )
-

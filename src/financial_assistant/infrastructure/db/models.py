@@ -17,9 +17,7 @@ class PortfolioORM(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    positions: Mapped[list["PositionORM"]] = relationship(
-        back_populates="portfolio", cascade="all, delete-orphan"
-    )
+    positions: Mapped[list["PositionORM"]] = relationship(back_populates="portfolio", cascade="all, delete-orphan")
 
 
 class PositionORM(Base):

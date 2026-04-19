@@ -3,7 +3,7 @@ import logging
 from langchain_core.messages import SystemMessage
 
 from financial_assistant.agents.llm_factory import make_llm
-from financial_assistant.agents.state import AgentState, VALID_INTENTS
+from financial_assistant.agents.state import VALID_INTENTS, AgentState
 from financial_assistant.agents.supervisor.prompts import CLASSIFY_INTENT_SCHEMA, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)

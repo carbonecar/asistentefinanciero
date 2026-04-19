@@ -1,14 +1,14 @@
 import logging
 
-from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 
 from financial_assistant.agents.auditor.agent import make_auditor_node
 from financial_assistant.agents.data_fetcher.agent import make_data_fetcher_node
 from financial_assistant.agents.fx_fetcher.agent import make_fx_fetcher_node
 from financial_assistant.agents.news_scout.agent import make_news_scout_node
 from financial_assistant.agents.quant.agent import make_quant_node
-from financial_assistant.agents.state import AgentState, BLOCKING_INTENTS, NODE_FOR_INTENT, Node, ROUTING_OVERRIDES
+from financial_assistant.agents.state import BLOCKING_INTENTS, NODE_FOR_INTENT, ROUTING_OVERRIDES, AgentState, Node
 from financial_assistant.agents.supervisor.agent import make_supervisor_node
 from financial_assistant.agents.ux_agent.agent import make_ux_node
 
@@ -24,13 +24,14 @@ UNSUPPORTED_RESPONSE = (
 
 
 async def unsupported_node(state: AgentState) -> dict:  # type: ignore[type-arg]
-    logger.info("[GRAPH] unsupported → END")
+    logger.info("[GRAPH] unsupported → END. State: %s", state)
     return {"final_response": UNSUPPORTED_RESPONSE, "error": None}
 
 
 def _resolve(intent: str) -> str:
-    node = NODE_FOR_INTENT.get(intent, Node.UNSUPPORTED)
-    return ROUTING_OVERRIDES.get(node, node)
+    node: str = NODE_FOR_INTENT.get(intent, Node.UNSUPPORTED)
+    result: str = ROUTING_OVERRIDES.get(node, node)
+    return result
 
 
 def route_by_intent(state: AgentState) -> list[str]:
@@ -71,11 +72,11 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
 
     # Register nodes
     workflow.add_node(Node.SUPERVISOR, make_supervisor_node(**llm_kwargs))
-    workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.QUANT, make_quant_node(quant_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service))  # type: ignore[arg-type]
-    workflow.add_node(Node.FX_FETCHER, make_fx_fetcher_node(fx_gateway))  # type: ignore[arg-type]
+    workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service))
+    workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))
+    workflow.add_node(Node.QUANT, make_quant_node(quant_service))
+    workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service))
+    workflow.add_node(Node.FX_FETCHER, make_fx_fetcher_node(fx_gateway))
     workflow.add_node(Node.UX_AGENT, make_ux_node(**llm_kwargs))
     workflow.add_node(Node.UNSUPPORTED, unsupported_node)
     workflow.add_node(Node.POST_FETCH_ROUTER, lambda _: {})

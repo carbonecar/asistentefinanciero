@@ -10,16 +10,14 @@ from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
 
 
-class YFinanceGateway(IMarketDataGateway):
+class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
     """Adapter that wraps yfinance (sync) and exposes async interface."""
 
     async def fetch_ohlcv(self, ticker: str, period: str = "1y") -> list[OHLCV]:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, partial(self._fetch_sync, ticker, period))
 
-    async def fetch_benchmark(
-        self, benchmark: Literal["SPY", "^GSPC", "GC=F"]
-    ) -> list[OHLCV]:
+    async def fetch_benchmark(self, benchmark: Literal["SPY", "^GSPC", "GC=F"]) -> list[OHLCV]:
         return await self.fetch_ohlcv(benchmark, period="1y")
 
     def _fetch_sync(self, ticker: str, period: str) -> list[OHLCV]:

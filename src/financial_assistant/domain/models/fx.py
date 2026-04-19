@@ -5,8 +5,8 @@ from decimal import Decimal
 
 @dataclass(frozen=True)
 class ExchangeRate:
-    casa: str        # "oficial" | "blue" | "mep" | "mayorista"
-    nombre: str      # "Oficial" | "Blue" | "MEP" | etc.
+    casa: str  # "oficial" | "blue" | "mep" | "mayorista"
+    nombre: str  # "Oficial" | "Blue" | "MEP" | etc.
     compra: Decimal
     venta: Decimal
     updated_at: datetime

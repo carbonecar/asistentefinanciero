@@ -10,7 +10,7 @@ from financial_assistant.domain.ports.repositories import IMarketDataRepository
 from financial_assistant.infrastructure.db.models import OHLCVRecordORM
 
 
-class PostgresMarketDataRepository(IMarketDataRepository):
+class PostgresMarketDataRepository(IMarketDataRepository):  # type: ignore[misc]
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
 
@@ -68,7 +68,7 @@ class PostgresMarketDataRepository(IMarketDataRepository):
     def _to_domain(self, orm: OHLCVRecordORM) -> OHLCV:
         return OHLCV(
             ticker=orm.ticker,
-            date=orm.date,  # type: ignore[arg-type]
+            date=orm.date,
             open=Decimal(str(orm.open)),
             high=Decimal(str(orm.high)),
             low=Decimal(str(orm.low)),
