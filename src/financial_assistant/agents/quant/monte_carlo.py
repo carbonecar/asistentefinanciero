@@ -15,12 +15,11 @@ class MonteCarloSimulator:
         ohlcv_by_ticker: dict[str, list[OHLCV]],
         initial_value: float,
     ) -> SimulationResult:
-        returns_matrix = self._build_returns_matrix(weights, ohlcv_by_ticker)
-        if returns_matrix is None:
+        params = self._build_returns_matrix(weights, ohlcv_by_ticker)
+        if params is None:
             return self._empty_result()
 
-        mu = returns_matrix.mean()
-        sigma = returns_matrix.std()
+        mu, sigma = params
 
         # Geometric Brownian Motion: S(t) = S(0) * exp((mu - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z)
         dt = 1.0
@@ -45,8 +44,8 @@ class MonteCarloSimulator:
         self,
         weights: OptimizedWeights,
         ohlcv_by_ticker: dict[str, list[OHLCV]],
-    ) -> float | None:
-        """Compute weighted daily portfolio return (scalar mu and sigma)."""
+    ) -> tuple[float, float] | None:
+        """Compute weighted portfolio mu and sigma for GBM simulation."""
         weighted_mu = 0.0
         weighted_var = 0.0
         for ticker, weight in weights.weights.items():
@@ -59,7 +58,7 @@ class MonteCarloSimulator:
             weighted_var += (weight**2) * daily_returns.var()
         if weighted_var == 0:
             return None
-        return weighted_mu  # sigma computed per path from variance
+        return float(weighted_mu), float(np.sqrt(weighted_var))
 
     def _empty_result(self) -> SimulationResult:
         return SimulationResult(
