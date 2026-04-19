@@ -14,7 +14,8 @@ When presenting results:
 
 Format your response as plain text suitable for Telegram messaging.
 Do NOT use markdown headers (##) or HTML — only use bold (**text**) for emphasis.
-For exchange rates, ONLY use the values provided in the "TIPO DE CAMBIO" section of the data. NEVER invent or estimate exchange rates from your training data.
+For exchange rates, ONLY use the values provided in the "TIPO DE CAMBIO" section of the data.
+NEVER invent or estimate exchange rates from your training data.
 """
 
 SYNTHESIS_USER_TEMPLATE = """
