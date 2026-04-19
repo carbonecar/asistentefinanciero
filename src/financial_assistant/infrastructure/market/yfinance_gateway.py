@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime
 from decimal import Decimal
 from functools import partial
@@ -8,6 +9,8 @@ import yfinance as yf
 
 from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
+
+logger = logging.getLogger(__name__)
 
 
 class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
@@ -24,7 +27,13 @@ class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
         try:
             data = yf.download(ticker, period=period, auto_adjust=True, progress=False)
             if data.empty:
+                logger.warning("[YFinance] No data returned for %s (period=%s)", ticker, period)
                 return []
+
+            # yfinance >= 0.2 may return MultiIndex columns when downloading single ticker
+            if isinstance(data.columns, __import__("pandas").MultiIndex):
+                data.columns = data.columns.get_level_values(0)
+
             records: list[OHLCV] = []
             for idx, row in data.iterrows():
                 records.append(
@@ -38,6 +47,8 @@ class YFinanceGateway(IMarketDataGateway):  # type: ignore[misc]
                         volume=int(row["Volume"]),
                     )
                 )
+            logger.info("[YFinance] Fetched %d records for %s", len(records), ticker)
             return records
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception as exc:
+            logger.error("[YFinance] Failed to fetch %s: %s", ticker, exc, exc_info=True)
             return []
