@@ -34,6 +34,9 @@ async def _safe_answer(target: Message, text: str) -> None:
 async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # noqa: ANN401
     await callback.answer()
 
+    if not callback.data or not callback.bot or not isinstance(callback.message, Message):
+        return
+
     user_id = callback.from_user.id if callback.from_user else 0
     intent = callback.data.split(":")[1]
     user_message = INTENT_MESSAGES.get(intent, intent)
@@ -78,7 +81,8 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
 async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     user_id = message.from_user.id if message.from_user else 0
 
-    await message.bot.send_chat_action(message.chat.id, "typing")
+    if message.bot:
+        await message.bot.send_chat_action(message.chat.id, "typing")
 
     initial_state: AgentState = {
         "user_id": user_id,
