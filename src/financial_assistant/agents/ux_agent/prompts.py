@@ -13,9 +13,9 @@ When presenting results:
      NEVER invent or estimate exchange rates from your training data.
 
 Format your response as plain text suitable for Telegram messaging.
-Do NOT use markdown headers (##). Use <b>text</b> for bold emphasis (Telegram HTML mode).
-For exchange rates, ONLY use the values provided in the "TIPO DE CAMBIO" section of the data.
-NEVER invent or estimate exchange rates from your training data.
+Do NOT use markdown syntax (**bold**, _italic_, ##headers) — it will appear as literal characters.
+Do NOT use HTML tags (<b>, <i>) — they will be escaped and appear literally.
+Write plain text only. Use line breaks and bullet points (•) for structure.
 """
 
 SYNTHESIS_USER_TEMPLATE = """
@@ -33,6 +33,10 @@ Instructions:
   without a clear prior action context in the data: tell them that multi-step confirmation flows are not
   yet supported, and ask them to send their request as a single complete message
   (e.g. "Tengo 10 AAPL a $170" or "Auditá mi cartera").
+- If the data contains "MARKET DATA FETCHED" but the user asked to add, register or buy a position
+  (e.g. "agregar X acciones de Y a $Z"): explain that market data was retrieved successfully but
+  portfolio position registration is not yet available. Tell them what they can do today:
+  audit, optimize, or check news. Do NOT say there was a technical error in this case.
 - Do NOT invent data that is not present. Do NOT give generic financial advice when specific data was requested.
 - Respond only based on what is actually in the data above.
 """
