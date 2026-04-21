@@ -28,7 +28,7 @@ Instructions:
 - If the data contains "STATUS:" lines, use them to explain to the user exactly what happened and what they need to do.
 - If the data contains "INTERNAL ERROR:", tell the user there was a technical problem and suggest they retry.
 - If the portfolio is empty, tell the user to add positions first using the bot's commands.
-- If news are unavailable, tell the user the news feature requires a valid NEWSAPI_KEY configured by the admin.
+- If news are unavailable, tell the user no news could be found for the requested tickers (Yahoo Finance returned no results).
 - Do NOT invent data that is not present. Do NOT give generic financial advice when specific data was requested.
 - Respond only based on what is actually in the data above.
 """
