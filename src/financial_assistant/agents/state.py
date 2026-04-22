@@ -1,8 +1,13 @@
+import operator
 from typing import Annotated, Any, Literal
 
-from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
+
+from financial_assistant.domain.models.analysis import AuditReport, QuantResult
+from financial_assistant.domain.models.fx import ExchangeRate
+from financial_assistant.domain.models.news import SentimentResult
 
 Intent = Literal["audit", "optimize", "news", "data_fetch", "general", "unsupported"]
 
@@ -39,10 +44,6 @@ ROUTING_OVERRIDES: dict[str, str] = {
     Node.UX_AGENT: Node.FX_FETCHER,
 }
 
-from financial_assistant.domain.models.analysis import AuditReport, QuantResult
-from financial_assistant.domain.models.fx import ExchangeRate
-from financial_assistant.domain.models.news import SentimentResult
-
 
 class AgentState(TypedDict):
     # ---- Input ----
@@ -51,7 +52,7 @@ class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
     # ---- Routing (set by supervisor) ----
-    intents: list[Intent]  #Intent
+    intents: list[Intent]  # Intent
     active_tickers: list[str]
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool
@@ -65,4 +66,4 @@ class AgentState(TypedDict):
 
     # ---- Final ----
     final_response: str | None
-    error: str | None
+    errors: Annotated[list[str], operator.add]

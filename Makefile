@@ -2,6 +2,11 @@
 
 COMPOSE_DEV  = docker compose -f docker/docker-compose.yml
 COMPOSE_PROD = docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml
+PYTHON       = .venv/bin/python
+RUFF         = .venv/bin/ruff
+MYPY         = .venv/bin/mypy
+PYTEST       = .venv/bin/pytest
+ALEMBIC      = .venv/bin/alembic
 
 # --- Desarrollo local ---
 # Levanta solo postgres + redis; la app corre en tu máquina
@@ -13,11 +18,11 @@ infra-down:
 
 # Corre las migraciones contra la infra local (POSTGRES_HOST=localhost en .env)
 migrate:
-	alembic upgrade head
+	$(ALEMBIC) upgrade head
 
 # Arranca la app localmente (requiere infra-up y .env configurado)
 dev:
-	python -m financial_assistant.main
+	$(PYTHON) -m financial_assistant.main
 
 # --- Producción (todo en Docker) ---
 up:
@@ -37,15 +42,15 @@ shell:
 
 # --- Testing y calidad ---
 test:
-	pytest tests/unit/ -v
+	$(PYTEST) tests/unit/ -v
 
 test-integration:
-	pytest tests/integration/ -v -m integration
+	$(PYTEST) tests/integration/ -v -m integration
 
 lint:
-	ruff check src/ tests/
-	mypy src/
+	$(RUFF) check src/ tests/
+	$(MYPY) src/
 
 fmt:
-	ruff format src/ tests/
-	ruff check --fix src/ tests/
+	$(RUFF) format src/ tests/
+	$(RUFF) check --fix src/ tests/

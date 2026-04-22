@@ -1,9 +1,10 @@
 import logging
+import traceback
 
 from langchain_core.messages import SystemMessage
 
 from financial_assistant.agents.llm_factory import make_llm
-from financial_assistant.agents.state import AgentState, VALID_INTENTS
+from financial_assistant.agents.state import VALID_INTENTS, AgentState
 from financial_assistant.agents.supervisor.prompts import CLASSIFY_INTENT_SCHEMA, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -36,8 +37,8 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
                     "period": args.get("period", "1y"),
                     "use_sentiment": args.get("use_sentiment", False),
                 }
-        except Exception as exc:
-            logger.warning("Supervisor LLM call failed: %s", exc)
+        except Exception:
+            logger.error("Supervisor LLM call failed — routing to 'general':\n%s", traceback.format_exc())
 
         return {
             "intents": ["general"],

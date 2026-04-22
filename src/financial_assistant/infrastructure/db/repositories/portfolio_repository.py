@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -9,7 +9,7 @@ from financial_assistant.domain.ports.repositories import IPortfolioRepository
 from financial_assistant.infrastructure.db.models import PortfolioORM, PositionORM
 
 
-class PostgresPortfolioRepository(IPortfolioRepository):
+class PostgresPortfolioRepository(IPortfolioRepository): # type: ignore[misc]
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = session_factory
 
@@ -27,7 +27,7 @@ class PostgresPortfolioRepository(IPortfolioRepository):
 
     async def save(self, portfolio: Portfolio) -> None:
         async with self._session_factory() as session:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             orm = PortfolioORM(
                 user_id=portfolio.user_id,
                 created_at=now,
@@ -38,12 +38,10 @@ class PostgresPortfolioRepository(IPortfolioRepository):
 
     async def upsert_position(self, user_id: int, position: Position) -> None:
         async with self._session_factory() as session:
-            portfolio_result = await session.execute(
-                select(PortfolioORM).where(PortfolioORM.user_id == user_id)
-            )
+            portfolio_result = await session.execute(select(PortfolioORM).where(PortfolioORM.user_id == user_id))
             portfolio_orm = portfolio_result.scalar_one_or_none()
             if portfolio_orm is None:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 portfolio_orm = PortfolioORM(user_id=user_id, created_at=now, updated_at=now)
                 session.add(portfolio_orm)
                 await session.flush()
@@ -71,14 +69,12 @@ class PostgresPortfolioRepository(IPortfolioRepository):
                     )
                 )
 
-            portfolio_orm.updated_at = datetime.now(timezone.utc)
+            portfolio_orm.updated_at = datetime.now(UTC)
             await session.commit()
 
     async def delete_position(self, user_id: int, ticker: str) -> None:
         async with self._session_factory() as session:
-            portfolio_result = await session.execute(
-                select(PortfolioORM).where(PortfolioORM.user_id == user_id)
-            )
+            portfolio_result = await session.execute(select(PortfolioORM).where(PortfolioORM.user_id == user_id))
             portfolio_orm = portfolio_result.scalar_one_or_none()
             if portfolio_orm is None:
                 return

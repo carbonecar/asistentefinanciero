@@ -1,5 +1,6 @@
 import html
 import logging
+import traceback
 from typing import Any
 
 from aiogram import F, Router
@@ -33,17 +34,20 @@ async def _safe_answer(target: Message, text: str) -> None:
 async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # noqa: ANN401
     await callback.answer()
 
+    if not callback.data or not callback.bot or not isinstance(callback.message, Message):
+        return
+
     user_id = callback.from_user.id if callback.from_user else 0
-    intent = callback.data.split(":")[1]  # type: ignore[union-attr]
+    intent = callback.data.split(":")[1]
     user_message = INTENT_MESSAGES.get(intent, intent)
 
-    await callback.bot.send_chat_action(callback.message.chat.id, "typing")  # type: ignore[union-attr]
+    await callback.bot.send_chat_action(callback.message.chat.id, "typing")
 
     initial_state: AgentState = {
         "user_id": user_id,
         "user_message": user_message,
         "messages": [HumanMessage(content=user_message)],
-        "intent": intent,
+        "intents": [intent],
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
@@ -53,7 +57,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
         "news_results": None,
         "exchange_rates": None,
         "final_response": None,
-        "error": None,
+        "errors": [],
     }
 
     config = {"configurable": {"thread_id": str(user_id)}}
@@ -61,27 +65,30 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("Graph invocation failed for user %s: %s", user_id, exc)
+        if result.get("errors"):
+            logger.warning("Graph completed with errors for user %s: %s", user_id, result["errors"])
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
 
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."
 
-    await _safe_answer(callback.message, response_text)  # type: ignore[arg-type]
+    await _safe_answer(callback.message, response_text)
 
 
 @message_router.message(F.text)
 async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     user_id = message.from_user.id if message.from_user else 0
 
-    await message.bot.send_chat_action(message.chat.id, "typing")  # type: ignore[union-attr]
+    if message.bot:
+        await message.bot.send_chat_action(message.chat.id, "typing")
 
     initial_state: AgentState = {
         "user_id": user_id,
         "user_message": message.text or "",
         "messages": [HumanMessage(content=message.text or "")],
-        "intent": "",
+        "intents": [],
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
@@ -91,7 +98,7 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
         "news_results": None,
         "exchange_rates": None,
         "final_response": None,
-        "error": None,
+        "errors": [],
     }
 
     config = {"configurable": {"thread_id": str(user_id)}}
@@ -99,8 +106,10 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     try:
         result = await graph.ainvoke(initial_state, config=config)
         response_text = result.get("final_response") or "No pude procesar tu consulta. Intentá de nuevo."
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        logger.error("Graph invocation failed for user %s: %s", user_id, exc)
+        if result.get("errors"):
+            logger.warning("Graph completed with errors for user %s: %s", user_id, result["errors"])
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
 
     if len(response_text) > 4096:

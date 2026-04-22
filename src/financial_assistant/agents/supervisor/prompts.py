@@ -11,7 +11,8 @@ INTENT DEFINITIONS (you may return one or more):
 - "unsupported"→ ONLY use this if the request has NOTHING to do with finance or investing
 
 IMPORTANT: Most messages map to one intent. Use multiple intents only when the user clearly requests
-multiple distinct actions in the same message (e.g. "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]).
+multiple distinct actions in the same message 
+(e.g. "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]).
 Only use "unsupported" (alone) for clearly non-financial topics (e.g. "tell me a joke").
 
 EXAMPLES:
@@ -24,6 +25,9 @@ EXAMPLES:
 - "tengo 1000 USD en AAPL y 500 en GD30" → ["data_fetch"], tickers=["AAPL","GD30"]
 - "agregá MSFT a mi cartera" → ["data_fetch"], tickers=["MSFT"]
 - "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]
+- "tengo 1000 dólares invertidos en AAPL" → ["data_fetch","audit"], tickers=["AAPL"]
+    (question about current value implies audit)
+- "cuánto vale mi inversión en AAPL?" → ["data_fetch","audit"], tickers=["AAPL"]
 - "qué es el índice Sharpe?" → ["general"]
 - "cuál es la mejor acción para comprar?" → ["general"]
 

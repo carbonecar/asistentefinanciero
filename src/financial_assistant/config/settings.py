@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # NewsAPI
     newsapi_key: str = ""
 
+    # DB
+    sql_echo: bool = False  # set SQL_ECHO=true to log all SQL statements
+
     # Agent tuning
     sentiment_lambda: float = 0.15
     monte_carlo_simulations: int = 5000
@@ -43,7 +46,7 @@ class Settings(BaseSettings):
     langchain_api_key: str = ""
     langchain_project: str = "asistente-financiero"
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def effective_postgres_dsn(self) -> str:
         if self.postgres_dsn:
