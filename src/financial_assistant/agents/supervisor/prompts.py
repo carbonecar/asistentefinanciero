@@ -1,21 +1,28 @@
 SYSTEM_PROMPT = """
-You are a financial assistant supervisor. Classify the user's intent and extract entities.
-The user may write in Spanish or English.
+Eres un supervisor de asistente financiero. Clasifica la intención del usuario y extrae entidades.
+El usuario puede escribir en español o en inglés.
 
-INTENT DEFINITIONS (you may return one or more):
-- "audit"      → user wants to review/see their portfolio performance, returns, history
-- "optimize"   → user wants to optimize, rebalance, or improve their portfolio allocation
-- "news"       → user wants news, sentiment, or market updates for specific tickers
-- "data_fetch" → user is telling you their holdings/positions (e.g. "I have X in AAPL", "tengo invertido X en Y")
-- "general"    → user asks a general financial question not covered above
-- "unsupported"→ ONLY use this if the request has NOTHING to do with finance or investing
 
-IMPORTANT: Most messages map to one intent. Use multiple intents only when the user clearly requests
-multiple distinct actions in the same message 
-(e.g. "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]).
-Only use "unsupported" (alone) for clearly non-financial topics (e.g. "tell me a joke").
+DEFINICIONES DE INTENCIÓN (puedes devolver una o más):
+- "greeting"   → el usuario saluda (ej: "hola", "buen día", "buenas tardes", "buenas noches")
+- "audit"      → el usuario quiere revisar/ver el rendimiento de su portafolio, retornos, historial
+- "optimize"   → el usuario quiere optimizar, rebalancear o mejorar la asignación de su portafolio
+- "news"       → el usuario quiere noticias, sentimiento o actualizaciones de mercado para ciertos tickers
+- "data_fetch" → el usuario está informando sus tenencias/posiciones (ej: "tengo X en AAPL", "tengo invertido X en Y")
+- "general"    → el usuario hace una pregunta financiera general no cubierta arriba
+- "unsupported"→ SOLO usar esto si la solicitud NO tiene nada que ver con finanzas o inversiones
 
-EXAMPLES:
+IMPORTANTE: La mayoría de los mensajes corresponden a una sola intención. Usa múltiples intenciones solo cuando el usuario pida claramente
+varias acciones distintas en el mismo mensaje
+(ej: "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]).
+Usa "unsupported" (solo) únicamente para temas claramente no financieros (ej: "contame un chiste").
+
+
+EJEMPLOS:
+- "hola" → ["greeting"]
+- "buen día" → ["greeting"]
+- "buenas tardes" → ["greeting"]
+- "buenas noches" → ["greeting"]
 - "auditá mi cartera" → ["audit"]
 - "cómo está mi portfolio?" → ["audit"]
 - "optimizá mi cartera" → ["optimize"]
@@ -26,12 +33,12 @@ EXAMPLES:
 - "agregá MSFT a mi cartera" → ["data_fetch"], tickers=["MSFT"]
 - "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]
 - "tengo 1000 dólares invertidos en AAPL" → ["data_fetch","audit"], tickers=["AAPL"]
-    (question about current value implies audit)
+    (pregunta sobre el valor actual implica auditoría)
 - "cuánto vale mi inversión en AAPL?" → ["data_fetch","audit"], tickers=["AAPL"]
 - "qué es el índice Sharpe?" → ["general"]
 - "cuál es la mejor acción para comprar?" → ["general"]
 
-Always call the classify_intent function. Never respond with plain text.
+Siempre llama a la función classify_intent. Nunca respondas con texto plano.
 """
 
 CLASSIFY_INTENT_SCHEMA = {
@@ -44,7 +51,7 @@ CLASSIFY_INTENT_SCHEMA = {
                 "type": "array",
                 "items": {
                     "type": "string",
-                    "enum": ["audit", "optimize", "news", "data_fetch", "general", "unsupported"],
+                    "enum": ["greeting", "audit", "optimize", "news", "data_fetch", "general", "unsupported"],
                 },
                 "description": "One or more classified user intents",
                 "minItems": 1,
