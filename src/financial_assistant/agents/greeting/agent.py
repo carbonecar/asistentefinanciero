@@ -17,7 +17,7 @@ def make_greeting_node(
     api_key: str = "", 
     provider: str = "openai", 
     base_url: str = "http://localhost:11434"
-) -> Callable[[AgentState], Awaitable[dict[str, Any]]]:
+    ) -> Callable[[AgentState], Awaitable[dict[str, Any]]]:
     llm = make_llm(provider=provider, model=model, temperature=0, api_key=api_key, base_url=base_url)
 
     async def greeting_node(state: AgentState) -> dict[str, Any]:
