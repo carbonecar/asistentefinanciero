@@ -8,10 +8,17 @@ from financial_assistant.agents.state import AgentState
 
 logger = logging.getLogger(__name__)
 
-def make_greeting_node(model: str = "gpt-3.5-turbo", api_key: str = "", provider: str = "openai", base_url: str = "http://localhost:11434"):
-    llm = make_llm(provider=provider, model=model, temperature=0.2, api_key=api_key, base_url=base_url)
+from typing import Callable, Awaitable, Dict, Any
 
-    async def greeting_node(state: AgentState) -> dict:
+def make_greeting_node(
+    model: str,
+    api_key: str = "", 
+    provider: str = "openai", 
+    base_url: str = "http://localhost:11434"
+) -> Callable[[AgentState], Awaitable[Dict[str, Any]]]:
+    llm = make_llm(provider=provider, model=model, temperature=0, api_key=api_key, base_url=base_url)
+
+    async def greeting_node(state: AgentState) -> Dict[str, Any]:
         logger.info("[GREETING] user=%s", state.get("user_id"))
         user_message = state.get("user_message", "")
         prompt = GREETING_USER_TEMPLATE.format(user_message=user_message)
