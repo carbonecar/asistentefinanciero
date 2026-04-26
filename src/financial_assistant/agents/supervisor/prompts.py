@@ -12,10 +12,11 @@ DEFINICIONES DE INTENCIÓN (puedes devolver una o más):
 - "general"    → el usuario hace una pregunta financiera general no cubierta arriba
 - "unsupported"→ SOLO usar esto si la solicitud NO tiene nada que ver con finanzas o inversiones
 
-IMPORTANTE: La mayoría de los mensajes corresponden a una sola intención. Usa múltiples intenciones solo cuando el usuario pida claramente
-varias acciones distintas en el mismo mensaje
+IMPORTANTE: La mayoría de los mensajes corresponden a una sola intención. 
+Usa múltiples intenciones solo cuando el usuario pida claramente varias acciones distintas en el mismo mensaje 
 (ej: "cargá mis posiciones y auditá mi cartera" → ["data_fetch","audit"]).
-Usa "unsupported" (solo) únicamente para temas claramente no financieros (ej: "contame un chiste").
+Usa "unsupported" (solo) únicamente para temas claramente no financieros 
+(ej: "contame un chiste").
 
 
 EJEMPLOS:

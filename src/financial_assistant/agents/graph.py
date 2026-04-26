@@ -3,10 +3,10 @@ import logging
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
-from financial_assistant.agents.greeting.agent import make_greeting_node
 from financial_assistant.agents.auditor.agent import make_auditor_node
 from financial_assistant.agents.data_fetcher.agent import make_data_fetcher_node
 from financial_assistant.agents.fx_fetcher.agent import make_fx_fetcher_node
+from financial_assistant.agents.greeting.agent import make_greeting_node
 from financial_assistant.agents.news_scout.agent import make_news_scout_node
 from financial_assistant.agents.quant.agent import make_quant_node
 from financial_assistant.agents.state import BLOCKING_INTENTS, NODE_FOR_INTENT, ROUTING_OVERRIDES, AgentState, Node
