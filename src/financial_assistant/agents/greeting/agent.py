@@ -2,9 +2,7 @@
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
-
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-
 from financial_assistant.agents.greeting.prompts import GREETING_SYSTEM_PROMPT, GREETING_USER_TEMPLATE
 from financial_assistant.agents.llm_factory import make_llm
 from financial_assistant.agents.state import AgentState
