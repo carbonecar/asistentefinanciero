@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-set -a
-source .env
-set +a
-
 COMPOSE_DEV="docker compose -f docker/docker-compose.yml"
 COMPOSE_PROD="docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml"
 

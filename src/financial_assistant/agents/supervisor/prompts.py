@@ -23,6 +23,8 @@ EJEMPLOS:
 - "buen día" → ["greeting"]
 - "buenas tardes" → ["greeting"]
 - "buenas noches" → ["greeting"]
+- "hola, auditá mi cartera" → ["greeting", "audit"]
+- "buen día, quiero ver mis posiciones" → ["greeting", "audit"]
 - "auditá mi cartera" → ["audit"]
 - "cómo está mi portfolio?" → ["audit"]
 - "optimizá mi cartera" → ["optimize"]

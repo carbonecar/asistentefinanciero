@@ -3,6 +3,7 @@ import logging
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
+from financial_assistant.agents.greeting.agent import make_greeting_node
 from financial_assistant.agents.auditor.agent import make_auditor_node
 from financial_assistant.agents.data_fetcher.agent import make_data_fetcher_node
 from financial_assistant.agents.fx_fetcher.agent import make_fx_fetcher_node
@@ -71,6 +72,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     llm_kwargs = dict(provider=llm_provider, model=llm_model, api_key=llm_api_key, base_url=llm_base_url)
 
     # Register nodes
+    workflow.add_node(Node.GREETING, make_greeting_node(**llm_kwargs))
     workflow.add_node(Node.SUPERVISOR, make_supervisor_node(**llm_kwargs))
     workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service))
     workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))
@@ -85,6 +87,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.set_entry_point(Node.SUPERVISOR)
 
     _specialist_map = {
+        Node.GREETING: Node.GREETING,
         Node.DATA_FETCHER: Node.DATA_FETCHER,
         Node.AUDITOR: Node.AUDITOR,
         Node.QUANT: Node.QUANT,
