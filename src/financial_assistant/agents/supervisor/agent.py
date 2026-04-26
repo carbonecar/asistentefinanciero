@@ -20,6 +20,14 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
     llm_with_tools = llm.bind_tools([{"type": "function", "function": CLASSIFY_INTENT_SCHEMA}])
 
     async def supervisor_node(state: AgentState) -> dict:  # type: ignore[type-arg]
+        """
+        Agente supervisor que clasifica la intención del usuario y extrae entidades.
+        Devuelve un diccionario con las claves:
+        - "intents": lista de intenciones clasificadas (ejemplo: ["audit", "news"])
+        - "active_tickers": lista de tickers activos (ejemplo: ["AAPL", "GD30"])
+        - "period": período de tiempo mencionado (ejemplo: "1y", "6mo", "3mo")
+        - "use_sentiment": indica si el usuario quiere optimización ajustada por sentimiento
+        """
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
         try:
             response = await llm_with_tools.ainvoke(messages)

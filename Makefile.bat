@@ -74,3 +74,5 @@ case "${1:-}" in
         exit 1
         ;;
 esac
+    echo "El script terminó con código de salida: $?"
+    read -p "Presione cualquier tecla para continuar..."
