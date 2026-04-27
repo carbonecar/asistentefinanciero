@@ -59,6 +59,7 @@ class AgentState(TypedDict):
     use_sentiment: bool
     quantity: float
     avg_cost_usd: float
+    pending_position: dict[str, Any] | None
 
     # ---- Agent outputs (accumulated) ----
     market_data_result: dict[str, Any] | None

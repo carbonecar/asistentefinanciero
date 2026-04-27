@@ -8,7 +8,8 @@ DEFINICIONES DE INTENCIÓN (puedes devolver una o más):
 - "optimize"   → el usuario quiere optimizar, rebalancear o mejorar la asignación de su portafolio
 - "news"       → el usuario quiere noticias, sentimiento o actualizaciones de mercado para ciertos tickers
 - "data_fetch" → el usuario está informando sus tenencias/posiciones (ej: "tengo X en AAPL", "tengo invertido X en Y")
-- "general"    → el usuario hace una pregunta financiera general no cubierta arriba
+- "general" → el usuario hace una pregunta financiera general, saluda, 
+  o declara datos de un activo SIN indicar qué quiere hacer con ellos
 - "unsupported"→ SOLO usar esto si la solicitud NO tiene nada que ver con finanzas o inversiones
 
 IMPORTANTE: La mayoría de los mensajes corresponden a una sola intención. 
@@ -39,8 +40,16 @@ EJEMPLOS:
 - "cuánto vale mi inversión en AAPL?" → ["data_fetch","audit"], tickers=["AAPL"]
 - "qué es el índice Sharpe?" → ["general"]
 - "cuál es la mejor acción para comprar?" → ["general"]
-- "tengo 10 acciones de AAPL a $150" → ["data_fetch"], tickers=["AAPL"], quantity=10, avg_cost_usd=150
-- "compré 5 acciones de MSFT a $300 promedio" → ["data_fetch"], tickers=["MSFT"], quantity=5, avg_cost_usd=300
+- "tengo 10 acciones de AAPL a $150" → ["general"], tickers=["AAPL"], quantity=10, avg_cost_usd=150
+  (el usuario declara datos pero no indica si quiere registrar o evaluar)
+- "tengo MSFT a $300" → ["general"], tickers=["MSFT"], avg_cost_usd=300
+  (idem anterior)
+- "quiero registrar mis acciones de AAPL" → ["data_fetch"], tickers=["AAPL"]
+  (intención explícita de registrar)
+- "registrá mis acciones" → ["data_fetch"]
+  (intención explícita de registrar)
+- "quiero saber si conviene comprar AAPL" → ["news", "audit"], tickers=["AAPL"]
+  (intención explícita de evaluar)
 
 Siempre llama a la función classify_intent. Nunca respondas con texto plano.
 """

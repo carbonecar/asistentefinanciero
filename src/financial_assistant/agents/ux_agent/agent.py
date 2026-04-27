@@ -40,6 +40,8 @@ def make_ux_node(  # type: ignore[no-untyped-def]
         current_prompt = SYNTHESIS_USER_TEMPLATE.format(
             user_message=user_message,
             intents=state.get("intents", []),
+            quantity=state.get("quantity", 0),
+            avg_cost_usd=state.get("avg_cost_usd", 0),
             data_summary=data_summary,
         )
 
