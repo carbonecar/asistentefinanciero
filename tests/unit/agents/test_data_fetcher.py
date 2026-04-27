@@ -130,10 +130,12 @@ class TestNormalizeTickers:
 # ---------------------------------------------------------------------------
 
 class TestDataFetcherNode:
+
     @pytest.mark.asyncio
     async def test_empty_tickers_returns_empty_result(self):
         svc = _make_service({})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=[]))
         assert result["market_data_result"] == {}
         assert result["errors"] == []
@@ -142,7 +144,8 @@ class TestDataFetcherNode:
     @pytest.mark.asyncio
     async def test_none_tickers_returns_empty_result(self):
         svc = _make_service({})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=None))
         assert result["market_data_result"] == {}
         assert result["errors"] == []
@@ -151,7 +154,8 @@ class TestDataFetcherNode:
     @pytest.mark.asyncio
     async def test_all_invalid_tickers_returns_error(self):
         svc = _make_service({})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["bad!", "also bad!"]))
         assert result["market_data_result"] == {}
         assert result["errors"]
@@ -164,7 +168,8 @@ class TestDataFetcherNode:
             _make_ohlcv("AAPL", 175.0, date(2024, 1, 2)),
         ]
         svc = _make_service({"AAPL": records})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["AAPL"]))
 
         md = result["market_data_result"]
@@ -179,7 +184,8 @@ class TestDataFetcherNode:
     @pytest.mark.asyncio
     async def test_ticker_with_no_data_marked_as_failed(self):
         svc = _make_service({"GD30": []})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["GD30"]))
 
         md = result["market_data_result"]
@@ -191,7 +197,8 @@ class TestDataFetcherNode:
     async def test_partial_failure_sets_error_with_both_lists(self):
         records = [_make_ohlcv("AAPL", 175.0)]
         svc = _make_service({"AAPL": records, "INVALID": []})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["AAPL", "INVALID"]))
 
         md = result["market_data_result"]
@@ -205,7 +212,8 @@ class TestDataFetcherNode:
     async def test_service_exception_returns_error(self):
         svc = MagicMock()
         svc.fetch_and_persist = AsyncMock(side_effect=RuntimeError("DB connection lost"))
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["AAPL"]))
 
         assert result["market_data_result"] == {}
@@ -215,7 +223,8 @@ class TestDataFetcherNode:
     async def test_deduplication_before_service_call(self):
         records = [_make_ohlcv("AAPL", 175.0)]
         svc = _make_service({"AAPL": records})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         await node(_make_state(active_tickers=["AAPL", "aapl", "AAPL"]))
 
         called_cmd = svc.fetch_and_persist.call_args[0][0]
@@ -225,7 +234,8 @@ class TestDataFetcherNode:
     async def test_lowercase_normalized_before_service(self):
         records = [_make_ohlcv("MSFT", 300.0)]
         svc = _make_service({"MSFT": records})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         await node(_make_state(active_tickers=["msft"]))
 
         called_cmd = svc.fetch_and_persist.call_args[0][0]
@@ -234,7 +244,8 @@ class TestDataFetcherNode:
     @pytest.mark.asyncio
     async def test_all_fail_error_message_mentions_tickers(self):
         svc = _make_service({"AAPL": [], "MSFT": []})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["AAPL", "MSFT"]))
 
         assert result["errors"]
@@ -243,7 +254,8 @@ class TestDataFetcherNode:
     @pytest.mark.asyncio
     async def test_ba_ticker_failure_includes_hint(self):
         svc = _make_service({"GGAL.BA": []})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["GGAL.BA"]))
 
         assert result["errors"]
@@ -253,7 +265,8 @@ class TestDataFetcherNode:
     async def test_ba_ticker_success_no_hint(self):
         records = [_make_ohlcv("GGAL.BA", 1200.0)]
         svc = _make_service({"GGAL.BA": records})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["GGAL.BA"]))
 
         assert result["errors"] == []
@@ -263,7 +276,8 @@ class TestDataFetcherNode:
     async def test_rejected_tickers_reported_when_others_succeed(self):
         records = [_make_ohlcv("AAPL", 175.0)]
         svc = _make_service({"AAPL": records})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["AAPL", "bad!"]))
 
         assert result["market_data_result"]["AAPL"]["ok"] is True
@@ -274,7 +288,8 @@ class TestDataFetcherNode:
     async def test_mixed_ba_and_us_failure_hint_specific(self):
         records = [_make_ohlcv("AAPL", 175.0)]
         svc = _make_service({"AAPL": records, "GD30.BA": []})
-        node = make_data_fetcher_node(svc)
+        portfolio_service = MagicMock()
+        node = make_data_fetcher_node(svc, portfolio_service)
         result = await node(_make_state(active_tickers=["AAPL", "GD30.BA"]))
 
         assert result["errors"]
