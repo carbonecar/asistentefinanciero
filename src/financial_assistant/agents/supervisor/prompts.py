@@ -40,6 +40,8 @@ EJEMPLOS:
 - "cuánto vale mi inversión en AAPL?" → ["data_fetch","audit"], tickers=["AAPL"]
 - "qué es el índice Sharpe?" → ["general"]
 - "cuál es la mejor acción para comprar?" → ["general"]
+- "tengo 10 acciones de AAPL a $150" → ["data_fetch"], tickers=["AAPL"], quantity=10, avg_cost_usd=150
+- "compré 5 acciones de MSFT a $300 promedio" → ["data_fetch"], tickers=["MSFT"], quantity=5, avg_cost_usd=300
 
 Siempre llama a la función classify_intent. Nunca respondas con texto plano.
 """
@@ -56,25 +58,35 @@ CLASSIFY_INTENT_SCHEMA = {
                     "type": "string",
                     "enum": ["greeting", "audit", "optimize", "news", "data_fetch", "general", "unsupported"],
                 },
-                "description": "One or more classified user intents",
+                "description": "Una o más intenciones clasificadas del usuario",
                 "minItems": 1,
             },
             "tickers": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "List of stock/ETF tickers mentioned (uppercase, e.g. AAPL, SPY)",
+                "description": "Lista de tickers de acciones/ETFs mencionados (en mayúsculas, ej: AAPL, SPY)",
             },
             "period": {
                 "type": "string",
-                "description": "Time period mentioned (e.g. '1y', '6mo', '3mo'). Default: '1y'",
+                "description": "Período de tiempo mencionado (ej: '1y', '6mo', '3mo'). Por defecto: '1y'",
                 "default": "1y",
             },
             "use_sentiment": {
                 "type": "boolean",
-                "description": "Whether the user wants sentiment-adjusted optimization",
+                "description": "Si el usuario quiere optimización ajustada por sentimiento",
                 "default": False,
             },
+            "quantity": {
+                "type": "number",
+                "description": "Cantidad de acciones/unidades mencionadas por el usuario (ej: 10, 100)",
+                "default": 0,
+            },
+            "avg_cost_usd": {
+                "type": "number", 
+                "description": "Precio promedio de compra en USD mencionado por el usuario (ej: 150.0, 23.5)",
+                "default": 0,
+            },
         },
-        "required": ["intents", "tickers", "period", "use_sentiment"],
+        "required": ["intents", "tickers", "period", "use_sentiment", "quantity", "avg_cost_usd"],
     },
 }

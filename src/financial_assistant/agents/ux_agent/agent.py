@@ -39,6 +39,7 @@ def make_ux_node(  # type: ignore[no-untyped-def]
         # El mensaje final incluye los datos disponibles como contexto
         current_prompt = SYNTHESIS_USER_TEMPLATE.format(
             user_message=user_message,
+            intents=state.get("intents", []),
             data_summary=data_summary,
         )
 

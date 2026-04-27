@@ -59,6 +59,8 @@ class AgentState(TypedDict):
     active_tickers: list[str]
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool
+    quantity: float
+    avg_cost_usd: float
 
     # ---- Agent outputs (accumulated) ----
     market_data_result: dict[str, Any] | None
