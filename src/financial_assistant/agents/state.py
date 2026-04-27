@@ -14,7 +14,6 @@ Intent = Literal["audit", "optimize", "news", "data_fetch", "general", "unsuppor
 
 class Node:
     SUPERVISOR = "supervisor"
-    GREETING = "greeting"
     DATA_FETCHER = "data_fetcher"
     AUDITOR = "auditor"
     QUANT = "quant"
@@ -26,7 +25,6 @@ class Node:
 
 
 NODE_FOR_INTENT: dict[str, str] = {
-    "greeting": Node.GREETING,
     "data_fetch": Node.DATA_FETCHER,
     "audit": Node.AUDITOR,
     "optimize": Node.QUANT,

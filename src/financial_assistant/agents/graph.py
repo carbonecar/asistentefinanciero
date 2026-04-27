@@ -6,7 +6,6 @@ from langgraph.graph import END, StateGraph
 from financial_assistant.agents.auditor.agent import make_auditor_node
 from financial_assistant.agents.data_fetcher.agent import make_data_fetcher_node
 from financial_assistant.agents.fx_fetcher.agent import make_fx_fetcher_node
-from financial_assistant.agents.greeting.agent import make_greeting_node
 from financial_assistant.agents.news_scout.agent import make_news_scout_node
 from financial_assistant.agents.quant.agent import make_quant_node
 from financial_assistant.agents.state import BLOCKING_INTENTS, NODE_FOR_INTENT, ROUTING_OVERRIDES, AgentState, Node
@@ -137,7 +136,6 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
         supervisor → [routing condicional por intención]
             → data_fetcher → post_fetch_router → [intenciones pendientes]
             → auditor / quant / news_scout → fx_fetcher → ux_agent → END
-            → greeting → END (vía ux_agent)
             → unsupported → END
 
     Args:
@@ -160,7 +158,6 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     llm_kwargs = dict(provider=llm_provider, model=llm_model, api_key=llm_api_key, base_url=llm_base_url)
 
     # Registro de nodos
-    workflow.add_node(Node.GREETING, make_greeting_node(**llm_kwargs))
     workflow.add_node(Node.SUPERVISOR, make_supervisor_node(**llm_kwargs))
     workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service, portfolio_service))
     workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))
@@ -175,7 +172,6 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.set_entry_point(Node.SUPERVISOR)
 
     _specialist_map = {
-        Node.GREETING: Node.GREETING,
         Node.DATA_FETCHER: Node.DATA_FETCHER,
         Node.AUDITOR: Node.AUDITOR,
         Node.QUANT: Node.QUANT,
@@ -191,7 +187,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.add_conditional_edges(Node.POST_FETCH_ROUTER, post_fetch_route, _specialist_map)
 
     # Los especialistas restantes convergen en fx_fetcher
-    for node in (Node.AUDITOR, Node.QUANT, Node.NEWS_SCOUT, Node.GREETING):
+    for node in (Node.AUDITOR, Node.QUANT, Node.NEWS_SCOUT):
         workflow.add_edge(node, Node.FX_FETCHER)
 
     workflow.add_edge(Node.FX_FETCHER, Node.UX_AGENT)

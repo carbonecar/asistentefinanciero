@@ -4,7 +4,6 @@ El usuario puede escribir en español o en inglés.
 
 
 DEFINICIONES DE INTENCIÓN (puedes devolver una o más):
-- "greeting"   → el usuario saluda (ej: "hola", "buen día", "buenas tardes", "buenas noches")
 - "audit"      → el usuario quiere revisar/ver el rendimiento de su portafolio, retornos, historial
 - "optimize"   → el usuario quiere optimizar, rebalancear o mejorar la asignación de su portafolio
 - "news"       → el usuario quiere noticias, sentimiento o actualizaciones de mercado para ciertos tickers
@@ -20,12 +19,12 @@ Usa "unsupported" (solo) únicamente para temas claramente no financieros
 
 
 EJEMPLOS:
-- "hola" → ["greeting"]
-- "buen día" → ["greeting"]
-- "buenas tardes" → ["greeting"]
-- "buenas noches" → ["greeting"]
-- "hola, auditá mi cartera" → ["greeting", "audit"]
-- "buen día, quiero ver mis posiciones" → ["greeting", "audit"]
+- "hola" → ["general"]
+- "buen día" → ["general"]
+- "buenas tardes" → ["general"]
+- "buenas noches" → ["general"]
+- "hola, auditá mi cartera" → ["audit"]
+- "buen día, quiero ver mis posiciones" → ["audit"]
 - "auditá mi cartera" → ["audit"]
 - "cómo está mi portfolio?" → ["audit"]
 - "optimizá mi cartera" → ["optimize"]
@@ -56,7 +55,7 @@ CLASSIFY_INTENT_SCHEMA = {
                 "type": "array",
                 "items": {
                     "type": "string",
-                    "enum": ["greeting", "audit", "optimize", "news", "data_fetch", "general", "unsupported"],
+                    "enum": ["audit", "optimize", "news", "data_fetch", "general", "unsupported"],
                 },
                 "description": "Una o más intenciones clasificadas del usuario",
                 "minItems": 1,
