@@ -82,6 +82,15 @@ def _build_data_summary(state: AgentState) -> str:
             parts.append(f"  Top performer: {report.top_performer}")
         if report.worst_performer:
             parts.append(f"  Worst performer: {report.worst_performer}")
+        if report.positions:
+            parts.append("  POSICIONES:")
+            for pos in report.positions:
+                parts.append(
+                    f"    {pos['ticker']}: {pos['quantity']:.0f} acciones | "
+                    f"costo promedio: ${pos['avg_cost_usd']:.2f} | "
+                    f"precio actual: ${pos['current_price']:.2f} | "
+                    f"valor actual: ${pos['current_value']:.2f}"
+                )
     elif "audit" in intents:
         parts.append("AUDIT STATUS: El portfolio está vacío. El usuario no tiene posiciones registradas.")
 
