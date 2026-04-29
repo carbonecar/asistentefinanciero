@@ -14,6 +14,7 @@ Intent = Literal["audit", "optimize", "news", "data_fetch", "general", "unsuppor
 
 class Node:
     SUPERVISOR = "supervisor"
+    GREETING = "greeting"
     DATA_FETCHER = "data_fetcher"
     AUDITOR = "auditor"
     QUANT = "quant"
