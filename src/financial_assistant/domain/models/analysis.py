@@ -22,6 +22,7 @@ class AuditReport:
     comparisons: list[BenchmarkComparison] = field(default_factory=list)
     top_performer: str = ""
     worst_performer: str = ""
+    positions: list[dict[str, object]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

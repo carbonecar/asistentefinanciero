@@ -26,7 +26,6 @@ class Node:
 
 
 NODE_FOR_INTENT: dict[str, str] = {
-    "greeting": Node.GREETING,
     "data_fetch": Node.DATA_FETCHER,
     "audit": Node.AUDITOR,
     "optimize": Node.QUANT,
@@ -59,6 +58,9 @@ class AgentState(TypedDict):
     active_tickers: list[str]
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool
+    quantity: float
+    avg_cost_usd: float
+    pending_position: dict[str, Any] | None
 
     # ---- Agent outputs (accumulated) ----
     market_data_result: dict[str, Any] | None

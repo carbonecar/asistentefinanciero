@@ -44,6 +44,8 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
                     "active_tickers": [t.upper() for t in args.get("tickers", [])],
                     "period": args.get("period", "1y"),
                     "use_sentiment": args.get("use_sentiment", False),
+                    "quantity": args.get("quantity", 0),
+                    "avg_cost_usd": args.get("avg_cost_usd", 0),
                 }
         except Exception:
             logger.error("Supervisor LLM call failed — routing to 'general':\n%s", traceback.format_exc())
@@ -53,6 +55,8 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
             "active_tickers": [],
             "period": "1y",
             "use_sentiment": False,
+            "quantity": 0,
+            "avg_cost_usd": 0,
         }
 
     return supervisor_node

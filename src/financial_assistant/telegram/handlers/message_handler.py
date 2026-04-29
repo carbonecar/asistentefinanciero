@@ -51,6 +51,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
+        "pending_position": None,
         "market_data_result": None,
         "audit_report": None,
         "quant_result": None,
@@ -98,6 +99,7 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
         "news_results": None,
         "exchange_rates": None,
         "final_response": None,
+        "pending_position": None,
         "errors": [],
     }
 
