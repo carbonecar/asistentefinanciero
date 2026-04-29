@@ -22,8 +22,8 @@ from financial_assistant.infrastructure.db.repositories.portfolio_repository imp
 )
 from financial_assistant.infrastructure.fx.dolarapi_gateway import DolarApiGateway
 from financial_assistant.infrastructure.market.yfinance_gateway import YFinanceGateway
-from financial_assistant.infrastructure.news.newsapi_gateway import NewsAPIGateway
-from financial_assistant.infrastructure.nlp.sentiment_analyzer import TextBlobSentimentAnalyzer
+from financial_assistant.infrastructure.news.yfinance_news_gateway import YFinanceNewsGateway
+from financial_assistant.infrastructure.nlp.finbert_sentiment_analyzer import FinBERTSentimentAnalyzer
 
 
 class Container:
@@ -72,7 +72,7 @@ class Container:
 
         # Gateways externos
         market_gateway = YFinanceGateway()
-        news_gateway = NewsAPIGateway(api_key=settings.newsapi_key)
+        news_gateway = YFinanceNewsGateway()
 
         # Servicios de aplicación
         self.portfolio_service = PortfolioService(portfolio_repo)
@@ -101,7 +101,7 @@ class Container:
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
 
         quant_service = QuantService(portfolio_repo, market_gateway, _OptimizerAdapter(), _SimulatorAdapter())
-        news_service = NewsService(news_gateway, TextBlobSentimentAnalyzer())
+        news_service = NewsService(news_gateway, FinBERTSentimentAnalyzer())
         fx_gateway = DolarApiGateway()
 
         # Grafo LangGraph compilado
