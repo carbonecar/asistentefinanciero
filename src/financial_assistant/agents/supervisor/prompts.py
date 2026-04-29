@@ -68,22 +68,57 @@ EJEMPLOS:
 
 # Data fetch — intención explícita de registrar
 - "agregá MSFT a mi cartera" → ["data_fetch"], tickers=["MSFT"]
+- "tengo 10 de apple y 10 de google" → ["data_fetch"], tickers=["AAPL","GOOGL"], positions=[{ticker:"AAPL",quantity:10,...},{ticker:"GOOGL",quantity:10,...}]
+  (resolvé nombres de empresas al ticker correcto: apple→AAPL, google→GOOGL, tesla→TSLA, mercado libre→MELI)
 - "quiero registrar mis acciones de AAPL" → ["data_fetch"], tickers=["AAPL"]
 - "registrá mis acciones" → ["data_fetch"]
 - "cargá mis posiciones y auditá mi cartera" → ["data_fetch", "audit"]
 
-# Data fetch — declaración de datos sin intención explícita → general
-- "tengo 10 acciones de AAPL a $150" → ["general"], tickers=["AAPL"], quantity=10, avg_cost_usd=150
-  (el usuario declara datos pero no indica si quiere registrar o evaluar)
-- "tengo MSFT a $300" → ["general"], tickers=["MSFT"], avg_cost_usd=300
-  (idem anterior)
+# Data fetch — declaración con intención explícita de registrar → data_fetch
+- "tengo 10 acciones de apple y 10 de google, registralas" → ["data_fetch"], tickers=["AAPL","GOOGL"]
+- "quiero que registres mis posiciones: 10 apple y 10 google" → ["data_fetch"], tickers=["AAPL","GOOGL"]
+- "cargá estas posiciones en mi cartera: AAPL x10" → ["data_fetch"], tickers=["AAPL"]
+
+# Declaración de datos sin intención explícita → general
+- "tengo MSFT" → ["general"], tickers=["MSFT"]
 
 # Combinaciones
 - "tengo 1000 dólares invertidos en AAPL" → ["data_fetch", "audit"], tickers=["AAPL"]
   (pregunta sobre el valor actual implica auditoría)
 - "cuánto vale mi inversión en AAPL?" → ["data_fetch", "audit"], tickers=["AAPL"]
 
+Cuando el usuario mencione nombres de empresas en lugar de tickers, resolvelos al símbolo correcto (ej: apple→AAPL, google→GOOGL, tesla→TSLA, amazon→AMZN, mercado libre→MELI, ypf→YPF).
+
 Siempre llama a la función classify_intent. Nunca respondas con texto plano.
+"""
+
+FALLBACK_PROMPT = """Eres un clasificador de intenciones financieras. Responde ÚNICAMENTE con JSON válido, sin explicaciones.
+
+Intenciones posibles: audit, optimize, news, data_fetch, general, unsupported
+
+Reglas rápidas:
+- registrar / guardar / agregar posiciones / "quiero que registres" → data_fetch
+- auditar / ver cartera / rendimiento / composición → audit
+- noticias / sentimiento de TICKER → news
+- optimizar / rebalancear → optimize
+- pregunta general / saludo → general
+- nada de finanzas → unsupported
+
+Formato de respuesta (SOLO JSON, nada más):
+{
+  "intents": ["data_fetch"],
+  "tickers": ["AAPL", "GOOGL"],
+  "period": "1y",
+  "use_sentiment": false,
+  "positions": [
+    {"ticker": "AAPL", "quantity": 10, "avg_cost_usd": 0, "asset_type": "stock"},
+    {"ticker": "GOOGL", "quantity": 10, "avg_cost_usd": 0, "asset_type": "stock"}
+  ]
+}
+
+Tipos de activo válidos: stock, etf, bond_on, crypto
+Nombres de empresa → ticker: apple→AAPL, google→GOOGL, tesla→TSLA, amazon→AMZN, mercado libre→MELI
+Si no se menciona precio, usar avg_cost_usd=0.
 """
 
 CLASSIFY_INTENT_SCHEMA = {
@@ -116,17 +151,22 @@ CLASSIFY_INTENT_SCHEMA = {
                 "description": "Si el usuario quiere optimización ajustada por sentimiento",
                 "default": False,
             },
-            "quantity": {
-                "type": "number",
-                "description": "Cantidad de acciones/unidades mencionadas por el usuario (ej: 10, 100)",
-                "default": 0,
-            },
-            "avg_cost_usd": {
-                "type": "number",
-                "description": "Precio promedio de compra en USD mencionado por el usuario (ej: 150.0, 23.5)",
-                "default": 0,
+            "positions": {
+                "type": "array",
+                "description": "Posiciones extraídas del mensaje cuando el intent incluye data_fetch",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "ticker":       {"type": "string", "description": "Símbolo del ticker en mayúsculas"},
+                        "quantity":     {"type": "number", "description": "Cantidad de unidades. Si el usuario menciona un monto total sin cantidad, usar quantity=1 y avg_cost_usd=monto_total"},
+                        "avg_cost_usd": {"type": "number", "description": "Precio promedio de compra por unidad en USD"},
+                        "asset_type":   {"type": "string", "enum": ["stock", "etf", "bond_on", "crypto"], "description": "Tipo de activo"},
+                    },
+                    "required": ["ticker", "quantity", "avg_cost_usd", "asset_type"],
+                },
+                "default": [],
             },
         },
-        "required": ["intents", "tickers", "period", "use_sentiment", "quantity", "avg_cost_usd"],
+        "required": ["intents", "tickers", "period", "use_sentiment", "positions"],
     },
 }

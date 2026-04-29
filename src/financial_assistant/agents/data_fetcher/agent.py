@@ -108,8 +108,7 @@ def make_data_fetcher_node(
         raw_period: str = state.get("period", _DEFAULT_PERIOD) or _DEFAULT_PERIOD
         period: str = raw_period if raw_period in _VALID_PERIODS else _DEFAULT_PERIOD
         user_id: int = state.get("user_id", 0)
-        quantity: float = state.get("quantity", 0)
-        avg_cost_usd: float = state.get("avg_cost_usd", 0)
+        positions: list[dict] = state.get("positions") or []  # type: ignore[type-arg]
 
         if not raw_tickers:
             logger.warning("[DataFetcher] user=%s — no tickers in state, skipping", user_id)
@@ -123,34 +122,27 @@ def make_data_fetcher_node(
                 "errors": [f"Los tickers no son válidos: {raw_tickers}"],
             }
 
-        # Persistir posición si el usuario informó cantidad y precio promedio
-        if quantity > 0 and avg_cost_usd > 0 and len(tickers) == 1:
+        # Persistir posiciones extraídas por el supervisor LLM
+        for pos in positions:
+            ticker = str(pos.get("ticker", "")).upper()
+            quantity = float(pos.get("quantity", 0))
+            avg_cost_usd = float(pos.get("avg_cost_usd", 0))
+            asset_type_raw = str(pos.get("asset_type", "stock"))
+            if not ticker or quantity <= 0:
+                logger.warning("[DataFetcher] user=%s — skipping incomplete position: %s", user_id, pos)
+                continue
             try:
                 add_cmd = AddPositionCommand(
                     user_id=user_id,
-                    ticker=tickers[0],
-                    asset_type=AssetType.STOCK,
+                    ticker=ticker,
+                    asset_type=AssetType(asset_type_raw),
                     quantity=Decimal(str(quantity)),
                     avg_cost_usd=Decimal(str(avg_cost_usd)),
                 )
                 await portfolio_service.add_position(add_cmd)
-                logger.info(
-                    "[DataFetcher] user=%s — position saved: %s x%s @ $%s",
-                    user_id,
-                    tickers[0],
-                    quantity,
-                    avg_cost_usd,
-                )
+                logger.info("[DataFetcher] user=%s — position saved: %s x%s @ $%s", user_id, ticker, quantity, avg_cost_usd)
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                logger.error(
-                    "[DataFetcher] user=%s — failed to save position: %s",
-                    user_id,
-                    exc,
-                )
-                return {
-                    "market_data_result": {},
-                    "errors": [f"Error al guardar la posición: {exc}"],
-                }
+                logger.error("[DataFetcher] user=%s — failed to save position %s: %s", user_id, ticker, exc)
 
         # Descargar y persistir datos de mercado
         try:
