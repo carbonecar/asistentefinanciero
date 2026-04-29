@@ -27,22 +27,54 @@ from financial_assistant.infrastructure.nlp.finbert_sentiment_analyzer import Fi
 
 
 class Container:
+    """
+    Contenedor de inyección de dependencias del sistema.
+
+    Responsable de instanciar y cablear todos los componentes de la aplicación
+    en el orden correcto, respetando la regla de dependencias de la arquitectura
+    hexagonal: las capas internas (dominio, aplicación) no conocen las externas
+    (infraestructura, agentes).
+
+    Es el único lugar del sistema donde se resuelven las implementaciones
+    concretas de cada interfaz (puerto → adaptador).
+
+    Atributos públicos:
+        settings: Configuración de la aplicación.
+        portfolio_service: Servicio de gestión de posiciones, expuesto para
+            uso directo desde handlers de Telegram si fuera necesario.
+        graph: Grafo LangGraph compilado, listo para ser invocado con .ainvoke().
+    """
+
     def __init__(self, settings: Settings) -> None:  # pylint: disable=too-many-locals
+        """
+        Inicializa el contenedor instanciando y cableando todos los componentes.
+
+        El orden de instanciación es importante:
+        1. Base de datos (engine + session factory)
+        2. Repositorios (dependen de la DB)
+        3. Gateways externos (yfinance, newsapi, dolarapi)
+        4. Servicios de aplicación (dependen de repositorios y gateways)
+        5. Adaptadores de optimizador y simulador
+        6. Grafo LangGraph (depende de todos los servicios)
+
+        Args:
+            settings: Configuración cargada desde variables de entorno (.env).
+        """
         self.settings = settings
 
         # DB
         engine = build_engine(settings.effective_postgres_dsn, echo=settings.sql_echo)
         session_factory = build_session_factory(engine)
 
-        # Repositories
+        # Repositorios
         portfolio_repo = PostgresPortfolioRepository(session_factory)
         market_data_repo = PostgresMarketDataRepository(session_factory)
 
-        # Gateways
+        # Gateways externos
         market_gateway = YFinanceGateway()
         news_gateway = YFinanceNewsGateway()
 
-        # Application services
+        # Servicios de aplicación
         self.portfolio_service = PortfolioService(portfolio_repo)
         market_data_service = MarketDataService(market_gateway, market_data_repo)
         audit_service = AuditService(portfolio_repo, market_gateway, market_data_repo)
@@ -53,14 +85,18 @@ class Container:
             horizon_days=settings.monte_carlo_horizon_days,
         )
 
-        # Adapt optimizer/simulator to protocol interfaces
+        # Adaptadores internos que ajustan la firma de optimizer y simulator
+        # a los protocolos esperados por QuantService
         class _OptimizerAdapter:
+            """Adapta PortfolioOptimizer al protocolo OptimizerProtocol de QuantService."""
+
             def minimum_variance(self, ohlcv_by_ticker: dict, sentiment_map: dict) -> object:  # type: ignore[type-arg]
                 return optimizer.minimum_variance(ohlcv_by_ticker, sentiment_map)
 
         class _SimulatorAdapter:
-            def simulate(self, weights: object, ohlcv_by_ticker: dict, initial_value: float) -> object:  # type: ignore[type-arg]
+            """Adapta MonteCarloSimulator al protocolo SimulatorProtocol de QuantService."""
 
+            def simulate(self, weights: object, ohlcv_by_ticker: dict, initial_value: float) -> object:  # type: ignore[type-arg]
                 assert isinstance(weights, OptimizedWeights)
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
 
@@ -68,11 +104,13 @@ class Container:
         news_service = NewsService(news_gateway, FinBERTSentimentAnalyzer())
         fx_gateway = DolarApiGateway()
 
-        # LangGraph compiled graph
+        # Grafo LangGraph compilado
+        # Selecciona el modelo según el proveedor configurado
         llm_model = settings.ollama_model if settings.llm_provider == "ollama" else settings.openai_model
         self.graph = build_graph(
             audit_service=audit_service,
             market_data_service=market_data_service,
+            portfolio_service=self.portfolio_service,
             quant_service=quant_service,
             news_service=news_service,
             fx_gateway=fx_gateway,

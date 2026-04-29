@@ -88,4 +88,14 @@ class AuditService:
             comparisons=comparisons,
             top_performer=top,
             worst_performer=worst,
+            positions=[
+                {
+                    "ticker": p.ticker,
+                    "quantity": float(p.quantity),
+                    "avg_cost_usd": float(p.avg_cost_usd),
+                    "current_price": float(latest_prices.get(p.ticker, p.avg_cost_usd)),
+                    "current_value": float(p.quantity * latest_prices.get(p.ticker, p.avg_cost_usd)),
+                }
+                for p in portfolio.positions
+            ],
         )
