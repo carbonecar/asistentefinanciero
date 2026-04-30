@@ -1,6 +1,7 @@
 import logging
 import re
 from decimal import Decimal
+from typing import Any
 
 from financial_assistant.agents.state import AgentState
 from financial_assistant.application.dtos.requests import AddPositionCommand, FetchMarketDataCommand
@@ -108,7 +109,7 @@ def make_data_fetcher_node(
         raw_period: str = state.get("period", _DEFAULT_PERIOD) or _DEFAULT_PERIOD
         period: str = raw_period if raw_period in _VALID_PERIODS else _DEFAULT_PERIOD
         user_id: int = state.get("user_id", 0)
-        positions: list[dict] = state.get("positions") or []  # type: ignore[type-arg]
+        positions: list[dict[str, Any]] = state.get("positions") or []
 
         if not raw_tickers:
             logger.warning("[DataFetcher] user=%s — no tickers in state, skipping", user_id)
@@ -125,9 +126,9 @@ def make_data_fetcher_node(
         # Persistir posiciones extraídas por el supervisor LLM
         for pos in positions:
             ticker = str(pos.get("ticker", "")).upper()
-            quantity = float(pos.get("quantity", 0))
-            avg_cost_usd = float(pos.get("avg_cost_usd", 0))
-            asset_type_raw = str(pos.get("asset_type", "stock"))
+            quantity = float(pos.get("quantity") or 0)
+            avg_cost_usd = float(pos.get("avg_cost_usd") or 0)
+            asset_type_raw = str(pos.get("asset_type") or "stock")
             if not ticker or quantity <= 0:
                 logger.warning("[DataFetcher] user=%s — skipping incomplete position: %s", user_id, pos)
                 continue
@@ -140,7 +141,9 @@ def make_data_fetcher_node(
                     avg_cost_usd=Decimal(str(avg_cost_usd)),
                 )
                 await portfolio_service.add_position(add_cmd)
-                logger.info("[DataFetcher] user=%s — position saved: %s x%s @ $%s", user_id, ticker, quantity, avg_cost_usd)
+                logger.info(
+                    "[DataFetcher] user=%s — position saved: %s x%s @ $%s", user_id, ticker, quantity, avg_cost_usd
+                )
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.error("[DataFetcher] user=%s — failed to save position %s: %s", user_id, ticker, exc)
 

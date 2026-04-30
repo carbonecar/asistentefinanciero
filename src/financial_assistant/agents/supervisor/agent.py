@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import traceback
+from typing import Any, cast
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -40,7 +41,7 @@ def _parse_json_from_text(text: str) -> dict | None:  # type: ignore[type-arg]
     if not match:
         return None
     try:
-        return json.loads(match.group())
+        return cast(dict[str, Any], json.loads(match.group()))
     except json.JSONDecodeError:
         return None
 

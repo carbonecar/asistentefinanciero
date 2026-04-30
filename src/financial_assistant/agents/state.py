@@ -10,6 +10,7 @@ from financial_assistant.domain.models.fx import ExchangeRate
 from financial_assistant.domain.models.news import SentimentResult
 
 Intent = Literal["audit", "optimize", "news", "data_fetch", "general", "unsupported"]
+FALLBACK_INTENT: list[Intent] = ["unsupported"]
 
 
 class Node:
@@ -52,7 +53,7 @@ class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
     # ---- Routing (set by supervisor) ----
-    intents: list[Intent]  # Intent
+    intents: list[Intent]
     active_tickers: list[str]
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool

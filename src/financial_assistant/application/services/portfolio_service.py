@@ -25,6 +25,8 @@ class PortfolioService:
         )
         await self._repository.upsert_position(cmd.user_id, position)
         portfolio = await self._repository.get_by_user_id(cmd.user_id)
+        if portfolio is None:
+            raise RuntimeError(f"Portfolio not found for user {cmd.user_id} after upsert")
         return portfolio
 
     async def remove_position(self, user_id: int, ticker: str) -> None:

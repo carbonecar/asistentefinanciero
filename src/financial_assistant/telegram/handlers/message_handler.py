@@ -1,14 +1,15 @@
+import asyncio
 import html
 import logging
 import traceback
-from typing import Any
+from typing import Any, cast
 
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.enums import ParseMode
 from aiogram.types import CallbackQuery, Message
 from langchain_core.messages import HumanMessage
 
-from financial_assistant.agents.state import AgentState
+from financial_assistant.agents.state import AgentState, Intent
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ INTENT_MESSAGES = {
     "add_position": "Quiero agregar una posición",
 }
 
+_TYPING_INTERVAL = 4.0  # Telegram typing action expires after 5s
+
 
 async def _safe_answer(target: Message, text: str) -> None:
     """Send LLM response using HTML mode with escaped text.
@@ -28,6 +31,19 @@ async def _safe_answer(target: Message, text: str) -> None:
     broken entities, while still letting us use <b>/<i> manually if needed.
     """
     await target.answer(html.escape(text), parse_mode=ParseMode.HTML)
+
+
+async def _keep_typing(bot: Bot, chat_id: int, stop: asyncio.Event) -> None:
+    """Resend typing action every 4s until stop is set (Telegram expires it after 5s)."""
+    while not stop.is_set():
+        try:
+            await bot.send_chat_action(chat_id, "typing")
+        except Exception:  # pylint: disable=broad-exception-caught
+            break
+        try:
+            await asyncio.wait_for(asyncio.shield(stop.wait()), timeout=_TYPING_INTERVAL)
+        except TimeoutError:
+            pass
 
 
 @message_router.callback_query(F.data.startswith("intent:"))
@@ -41,13 +57,14 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     intent = callback.data.split(":")[1]
     user_message = INTENT_MESSAGES.get(intent, intent)
 
-    await callback.bot.send_chat_action(callback.message.chat.id, "typing")
+    stop_typing = asyncio.Event()
+    typing_task = asyncio.create_task(_keep_typing(callback.bot, callback.message.chat.id, stop_typing))
 
     initial_state: AgentState = {
         "user_id": user_id,
         "user_message": user_message,
         "messages": [HumanMessage(content=user_message)],
-        "intents": [intent],
+        "intents": [cast(Intent, intent)],
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
@@ -71,6 +88,9 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     except Exception:  # pylint: disable=broad-exception-caught
         logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
+    finally:
+        stop_typing.set()
+        await typing_task
 
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."
@@ -80,10 +100,13 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
 
 @message_router.message(F.text)
 async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
+    if not message.bot:
+        return
+
     user_id = message.from_user.id if message.from_user else 0
 
-    if message.bot:
-        await message.bot.send_chat_action(message.chat.id, "typing")
+    stop_typing = asyncio.Event()
+    typing_task = asyncio.create_task(_keep_typing(message.bot, message.chat.id, stop_typing))
 
     initial_state: AgentState = {
         "user_id": user_id,
@@ -113,6 +136,9 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     except Exception:  # pylint: disable=broad-exception-caught
         logger.error("Graph invocation failed for user %s:\n%s", user_id, traceback.format_exc())
         response_text = "Ocurrió un error inesperado. Por favor intentá de nuevo más tarde."
+    finally:
+        stop_typing.set()
+        await typing_task
 
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."

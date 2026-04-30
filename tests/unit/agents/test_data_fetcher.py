@@ -3,6 +3,7 @@ Unit tests for the DataFetcher agent.
 
 All tests use unittest.mock — no DB or network required.
 """
+
 from datetime import date
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
@@ -15,6 +16,7 @@ from financial_assistant.domain.models.market_data import OHLCV
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_ohlcv(ticker: str, close: float = 100.0, d: date = date(2024, 1, 2)) -> OHLCV:
     return OHLCV(
@@ -57,6 +59,7 @@ def _make_service(ohlcv_by_ticker: dict) -> MagicMock:
 # ---------------------------------------------------------------------------
 # _normalize_tickers — unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestNormalizeTickers:
     def test_uppercase(self):
@@ -129,8 +132,8 @@ class TestNormalizeTickers:
 # data_fetcher_node — unit tests
 # ---------------------------------------------------------------------------
 
-class TestDataFetcherNode:
 
+class TestDataFetcherNode:
     @pytest.mark.asyncio
     async def test_empty_tickers_returns_empty_result(self):
         svc = _make_service({})
@@ -301,6 +304,7 @@ class TestDataFetcherNode:
 # YFinanceGateway — timeout and logging tests
 # ---------------------------------------------------------------------------
 
+
 class TestYFinanceGateway:
     @pytest.mark.asyncio
     async def test_timeout_returns_empty_list(self):
@@ -328,6 +332,7 @@ class TestYFinanceGateway:
             _DEFAULT_TIMEOUT_SECONDS,
             YFinanceGateway,
         )
+
         gw_default = YFinanceGateway()
         gw_custom = YFinanceGateway(timeout=10.0)
 

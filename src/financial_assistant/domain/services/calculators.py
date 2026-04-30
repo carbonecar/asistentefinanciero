@@ -13,9 +13,9 @@ def compute_ohlcv_return(records: list[OHLCV]) -> Decimal:
     last = records[-1].close
     if first == 0:
         return Decimal("0")
-    
+
     ohlcv: Decimal = (last - first) / first
-    return ohlcv    
+    return ohlcv
 
 
 def compute_portfolio_return(portfolio: Portfolio, latest_prices: dict[str, Decimal]) -> Decimal:
@@ -30,7 +30,7 @@ def compute_portfolio_return(portfolio: Portfolio, latest_prices: dict[str, Deci
             current_value += position.quantity * price
         else:
             current_value += position.total_cost_usd
-    portfolio_return:Decimal = (current_value - total_cost) / total_cost
+    portfolio_return: Decimal = (current_value - total_cost) / total_cost
     return portfolio_return
 
 
