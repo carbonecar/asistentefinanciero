@@ -15,5 +15,7 @@ venv/
 htmlcov/
 .coverage
 .vscode/
-ARQUITECTURA.md
+NOTAS_DEL_PROYECTO.md
 AGENTE_AUDITOR.md
+dump_project.py
+project_snapshot.md

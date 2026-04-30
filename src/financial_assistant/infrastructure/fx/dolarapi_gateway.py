@@ -23,7 +23,7 @@ _CASAS_INTERES = {"oficial", "blue", "mep", "mayorista"}
 _CACHE_TTL = timedelta(minutes=5)
 
 
-class DolarApiGateway(IExchangeRateGateway):  # type: ignore[misc]
+class DolarApiGateway(IExchangeRateGateway):
     def __init__(self) -> None:
         self._cache: list[ExchangeRate] = []
         self._cache_expires_at: datetime = datetime.min

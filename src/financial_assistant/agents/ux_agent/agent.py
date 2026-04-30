@@ -71,57 +71,60 @@ def _build_data_summary(state: AgentState) -> str:
 
     if state.get("audit_report"):
         report = state["audit_report"]
-        parts.append(f"AUDIT REPORT (period: {report.period_label}):")
-        parts.append(f"  Portfolio return: {float(report.portfolio_return):.2%}")
-        for comp in report.comparisons:
-            parts.append(
-                f"  vs {comp.benchmark_name}: {float(comp.benchmark_return):.2%} "
-                f"(opportunity cost: {float(comp.opportunity_cost):+.2%})"
-            )
-        if report.top_performer:
-            parts.append(f"  Top performer: {report.top_performer}")
-        if report.worst_performer:
-            parts.append(f"  Worst performer: {report.worst_performer}")
-        if report.positions:
-            parts.append("  POSICIONES:")
-            for pos in report.positions:
+        if report is not None:
+            parts.append(f"AUDIT REPORT (period: {report.period_label}):")
+            parts.append(f"  Portfolio return: {float(report.portfolio_return):.2%}")
+            for comp in report.comparisons:
                 parts.append(
-                    f"    {pos['ticker']}: {pos['quantity']:.0f} acciones | "
-                    f"costo promedio: ${pos['avg_cost_usd']:.2f} | "
-                    f"precio actual: ${pos['current_price']:.2f} | "
-                    f"valor actual: ${pos['current_value']:.2f}"
+                    f"  vs {comp.benchmark_name}: {float(comp.benchmark_return):.2%} "
+                    f"(opportunity cost: {float(comp.opportunity_cost):+.2%})"
                 )
+            if report.top_performer:
+                parts.append(f"  Top performer: {report.top_performer}")
+            if report.worst_performer:
+                parts.append(f"  Worst performer: {report.worst_performer}")
+            if report.positions:
+                parts.append("  POSICIONES:")
+                for pos in report.positions:
+                    parts.append(
+                        f"    {pos['ticker']}: {pos['quantity']:.0f} acciones | "
+                        f"costo promedio: ${pos['avg_cost_usd']:.2f} | "
+                        f"precio actual: ${pos['current_price']:.2f} | "
+                        f"valor actual: ${pos['current_value']:.2f}"
+                    )
     elif "audit" in intents:
         parts.append("AUDIT STATUS: El portfolio está vacío. El usuario no tiene posiciones registradas.")
 
     if state.get("quant_result"):
         qr = state["quant_result"]
-        if qr.optimized_weights:
-            w = qr.optimized_weights
-            parts.append("OPTIMIZED PORTFOLIO:")
-            for ticker, weight in w.weights.items():
-                if weight > 0.001:
-                    parts.append(f"  {ticker}: {weight:.1%}")
-            parts.append(f"  Expected return: {w.expected_annual_return:.2%}")
-            parts.append(f"  Volatility: {w.annual_volatility:.2%}")
-            parts.append(f"  Sharpe ratio: {w.sharpe_ratio:.2f}")
-        if qr.simulation and qr.simulation.percentile_50:
-            sim = qr.simulation
-            final_median = sim.percentile_50[-1]
-            final_p5 = sim.percentile_5[-1]
-            final_p95 = sim.percentile_95[-1]
-            parts.append(
-                f"PROJECTION ({sim.horizon_days} days): "
-                f"Median ${final_median:,.0f} | "
-                f"Pessimistic ${final_p5:,.0f} | "
-                f"Optimistic ${final_p95:,.0f}"
-            )
+        if qr is not None:
+            if qr.optimized_weights:
+                w = qr.optimized_weights
+                parts.append("OPTIMIZED PORTFOLIO:")
+                for ticker, weight in w.weights.items():
+                    if weight > 0.001:
+                        parts.append(f"  {ticker}: {weight:.1%}")
+                parts.append(f"  Expected return: {w.expected_annual_return:.2%}")
+                parts.append(f"  Volatility: {w.annual_volatility:.2%}")
+                parts.append(f"  Sharpe ratio: {w.sharpe_ratio:.2f}")
+            if qr.simulation and qr.simulation.percentile_50:
+                sim = qr.simulation
+                final_median = sim.percentile_50[-1]
+                final_p5 = sim.percentile_5[-1]
+                final_p95 = sim.percentile_95[-1]
+                parts.append(
+                    f"PROJECTION ({sim.horizon_days} days): "
+                    f"Median ${final_median:,.0f} | "
+                    f"Pessimistic ${final_p5:,.0f} | "
+                    f"Optimistic ${final_p95:,.0f}"
+                )
     elif "optimize" in intents:
         parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
     if state.get("news_results"):
         parts.append("NEWS SENTIMENT:")
-        for result in state["news_results"]:
+        results = state["news_results"] or []
+        for result in results:
             parts.append(
                 f"  {result.ticker}: {result.label} (score: {result.score:+.3f}, {result.article_count} articles)"
             )
@@ -134,7 +137,7 @@ def _build_data_summary(state: AgentState) -> str:
         )
 
     if state.get("market_data_result"):
-        md = state["market_data_result"]
+        md = state["market_data_result"] or {}
         ok_entries = {t: i for t, i in md.items() if i.get("ok") is not False and i.get("latest_close")}
         failed_entries = [t for t, i in md.items() if not i.get("latest_close")]
         if ok_entries:
@@ -145,10 +148,7 @@ def _build_data_summary(state: AgentState) -> str:
                     if info.get("first_date") and info.get("latest_date")
                     else ""
                 )
-                parts.append(
-                    f"  {ticker}: ${info['latest_close']:.2f} "
-                    f"({info['records_count']} records{date_range})"
-                )
+                parts.append(f"  {ticker}: ${info['latest_close']:.2f} ({info['records_count']} records{date_range})")
         if failed_entries:
             parts.append(f"SIN DATOS PARA: {', '.join(failed_entries)} — ticker inválido o fuente no disponible.")
 
@@ -157,7 +157,8 @@ def _build_data_summary(state: AgentState) -> str:
 
     if state.get("exchange_rates"):
         parts.append("TIPO DE CAMBIO USD/ARS (dolarapi.com):")
-        for rate in state["exchange_rates"]:
+        rates = state["exchange_rates"] or []
+        for rate in rates:
             parts.append(
                 f"  {rate.nombre}: compra ${rate.compra:,.2f} | venta ${rate.venta:,.2f}"
                 f"  (actualizado: {rate.updated_at.strftime('%d/%m %H:%M')})"
