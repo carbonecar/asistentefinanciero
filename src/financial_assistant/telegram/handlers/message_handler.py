@@ -2,14 +2,14 @@ import asyncio
 import html
 import logging
 import traceback
-from typing import Any
+from typing import Any, cast
 
 from aiogram import Bot, F, Router
 from aiogram.enums import ParseMode
 from aiogram.types import CallbackQuery, Message
 from langchain_core.messages import HumanMessage
 
-from financial_assistant.agents.state import AgentState
+from financial_assistant.agents.state import AgentState, Intent
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ async def _keep_typing(bot: Bot, chat_id: int, stop: asyncio.Event) -> None:
             break
         try:
             await asyncio.wait_for(asyncio.shield(stop.wait()), timeout=_TYPING_INTERVAL)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
 
@@ -58,15 +58,13 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     user_message = INTENT_MESSAGES.get(intent, intent)
 
     stop_typing = asyncio.Event()
-    typing_task = asyncio.create_task(
-        _keep_typing(callback.bot, callback.message.chat.id, stop_typing)
-    )
+    typing_task = asyncio.create_task(_keep_typing(callback.bot, callback.message.chat.id, stop_typing))
 
     initial_state: AgentState = {
         "user_id": user_id,
         "user_message": user_message,
         "messages": [HumanMessage(content=user_message)],
-        "intents": [intent],
+        "intents": [cast(Intent, intent)],
         "active_tickers": [],
         "period": "1y",
         "use_sentiment": False,
@@ -108,9 +106,7 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     user_id = message.from_user.id if message.from_user else 0
 
     stop_typing = asyncio.Event()
-    typing_task = asyncio.create_task(
-        _keep_typing(message.bot, message.chat.id, stop_typing)
-    )
+    typing_task = asyncio.create_task(_keep_typing(message.bot, message.chat.id, stop_typing))
 
     initial_state: AgentState = {
         "user_id": user_id,

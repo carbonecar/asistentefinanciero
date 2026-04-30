@@ -27,14 +27,10 @@ def make_llm(
     if provider == "ollama":
         from langchain_ollama import ChatOllama  # pylint: disable=import-outside-toplevel
 
-        # Qwen3 models have thinking mode on by default which breaks tool calling.
-        # Passed both ways for compatibility across langchain-ollama versions.
         return ChatOllama(
             model=model,
             base_url=base_url,
             temperature=temperature,
-            think=False,
-            model_kwargs={"think": False},
         )
 
     # Default: openai

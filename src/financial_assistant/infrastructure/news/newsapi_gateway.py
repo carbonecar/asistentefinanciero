@@ -9,7 +9,7 @@ from financial_assistant.domain.ports.news_gateway import INewsGateway
 logger = logging.getLogger(__name__)
 
 
-class NewsAPIGateway(INewsGateway):  # type: ignore[misc]
+class NewsAPIGateway(INewsGateway):
     """Adapter for newsapi.org — wraps sync client in thread executor."""
 
     def __init__(self, api_key: str) -> None:

@@ -1,4 +1,4 @@
-.PHONY: up down infra-up infra-down build migrate logs test lint fmt dev
+.PHONY: up down infra-up infra-down build migrate logs test lint fmt dev setup
 
 COMPOSE_DEV  = docker compose -f docker/docker-compose.yml
 COMPOSE_PROD = docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml
@@ -7,6 +7,12 @@ RUFF         = .venv/bin/ruff
 MYPY         = .venv/bin/mypy
 PYTEST       = .venv/bin/pytest
 ALEMBIC      = .venv/bin/alembic
+
+# Primera vez: crea el venv, instala deps y registra los hooks de pre-commit
+setup:
+	python3.11 -m venv .venv
+	.venv/bin/pip install -e ".[dev]"
+	.venv/bin/pre-commit install
 
 # --- Desarrollo local ---
 # Levanta solo postgres + redis; la app corre en tu máquina

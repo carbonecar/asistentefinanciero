@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Hashable
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -8,9 +9,22 @@ from financial_assistant.agents.data_fetcher.agent import make_data_fetcher_node
 from financial_assistant.agents.fx_fetcher.agent import make_fx_fetcher_node
 from financial_assistant.agents.news_scout.agent import make_news_scout_node
 from financial_assistant.agents.quant.agent import make_quant_node
-from financial_assistant.agents.state import BLOCKING_INTENTS, NODE_FOR_INTENT, ROUTING_OVERRIDES, AgentState, Node
+from financial_assistant.agents.state import (
+    BLOCKING_INTENTS,
+    NODE_FOR_INTENT,
+    ROUTING_OVERRIDES,
+    AgentState,
+    Intent,
+    Node,
+)
 from financial_assistant.agents.supervisor.agent import make_supervisor_node
 from financial_assistant.agents.ux_agent.agent import make_ux_node
+from financial_assistant.application.services.audit_service import AuditService
+from financial_assistant.application.services.market_data_service import MarketDataService
+from financial_assistant.application.services.news_service import NewsService
+from financial_assistant.application.services.portfolio_service import PortfolioService
+from financial_assistant.application.services.quant_service import QuantService
+from financial_assistant.domain.ports.fx_gateway import IExchangeRateGateway
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +95,7 @@ def route_by_intent(state: AgentState) -> list[str]:
     Returns:
         Lista de nodos destino a los que derivar el flujo.
     """
-    intents = state.get("intents", [Node.UNSUPPORTED])
+    intents: list[Intent] = state.get("intents") or ["unsupported"]
     blocking = [i for i in intents if i in BLOCKING_INTENTS]
     non_blocking = [i for i in intents if i not in BLOCKING_INTENTS]
     if blocking and non_blocking:
@@ -114,12 +128,12 @@ def post_fetch_route(state: AgentState) -> list[str]:
 
 
 def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    audit_service: object,
-    market_data_service: object,
-    portfolio_service: object,
-    quant_service: object,
-    news_service: object,
-    fx_gateway: object,
+    audit_service: AuditService,
+    market_data_service: MarketDataService,
+    portfolio_service: PortfolioService,
+    quant_service: QuantService,
+    news_service: NewsService,
+    fx_gateway: IExchangeRateGateway,
     llm_provider: str = "openai",
     llm_model: str = "gpt-4o-mini",
     llm_api_key: str = "",
@@ -159,7 +173,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
 
     # Registro de nodos
     workflow.add_node(Node.SUPERVISOR, make_supervisor_node(**llm_kwargs))
-    workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service, portfolio_service))
+    workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service, portfolio_service))  # type: ignore[call-overload]
     workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))
     workflow.add_node(Node.QUANT, make_quant_node(quant_service))
     workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service))
@@ -171,7 +185,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     # Punto de entrada
     workflow.set_entry_point(Node.SUPERVISOR)
 
-    _specialist_map = {
+    _specialist_map: dict[Hashable, str] = {
         Node.DATA_FETCHER: Node.DATA_FETCHER,
         Node.AUDITOR: Node.AUDITOR,
         Node.QUANT: Node.QUANT,

@@ -1,4 +1,3 @@
-
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -13,11 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 def make_greeting_node(
-    model: str,
-    api_key: str = "", 
-    provider: str = "openai", 
-    base_url: str = "http://localhost:11434"
-    ) -> Callable[[AgentState], Awaitable[dict[str, Any]]]:
+    model: str, api_key: str = "", provider: str = "openai", base_url: str = "http://localhost:11434"
+) -> Callable[[AgentState], Awaitable[dict[str, Any]]]:
     llm = make_llm(provider=provider, model=model, temperature=0, api_key=api_key, base_url=base_url)
 
     async def greeting_node(state: AgentState) -> dict[str, Any]:
@@ -38,4 +34,5 @@ def make_greeting_node(
                 "final_response": "¡Hola! ¿En qué puedo ayudarte hoy?",
                 "errors": [str(exc)],
             }
+
     return greeting_node

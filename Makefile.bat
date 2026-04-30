@@ -7,6 +7,9 @@ COMPOSE_PROD="docker compose -f docker/docker-compose.yml -f docker/docker-compo
 usage() {
     echo "Usage: $0 <command>"
     echo ""
+    echo "Setup (primera vez):"
+    echo "  setup             Crea venv, instala deps y registra pre-commit hooks"
+    echo ""
     echo "Desarrollo local:"
     echo "  infra-up          Levanta postgres + redis"
     echo "  infra-down        Baja la infra local"
@@ -28,6 +31,11 @@ usage() {
 }
 
 case "${1:-}" in
+    setup)
+        python3.11 -m venv .venv
+        .venv/bin/pip install -e ".[dev]"
+        .venv/bin/pre-commit install
+        ;;
     infra-up)
         $COMPOSE_DEV up -d
         ;;
