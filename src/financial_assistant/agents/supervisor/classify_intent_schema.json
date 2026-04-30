@@ -1,0 +1,59 @@
+{
+  "name": "classify_intent",
+  "description": "Classify the user's intent(s) and extract entities",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "intents": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["audit", "optimize", "news", "data_fetch", "general", "unsupported"]
+        },
+        "description": "Una o más intenciones clasificadas del usuario",
+        "minItems": 1
+      },
+      "tickers": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Lista de tickers de acciones/ETFs mencionados (en mayúsculas, ej: AAPL, SPY)"
+      },
+      "period": {
+        "type": "string",
+        "description": "Período de tiempo mencionado (ej: '1y', '6mo', '3mo'). Por defecto: '1y'",
+        "default": "1y"
+      },
+      "use_sentiment": {
+        "type": "boolean",
+        "description": "Si el usuario quiere optimización ajustada por sentimiento",
+        "default": false
+      },
+      "positions": {
+        "type": "array",
+        "description": "Posiciones extraídas del mensaje cuando el intent incluye data_fetch",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ticker": {"type": "string", "description": "Símbolo del ticker en mayúsculas"},
+            "quantity": {
+              "type": "number",
+              "description": "Cantidad de unidades. Si el usuario menciona un monto total sin cantidad, usar quantity=1 y avg_cost_usd=monto_total"
+            },
+            "avg_cost_usd": {
+              "type": "number",
+              "description": "Precio promedio de compra por unidad en USD"
+            },
+            "asset_type": {
+              "type": "string",
+              "enum": ["stock", "etf", "bond_on", "crypto"],
+              "description": "Tipo de activo"
+            }
+          },
+          "required": ["ticker", "quantity", "avg_cost_usd", "asset_type"]
+        },
+        "default": []
+      }
+    },
+    "required": ["intents", "tickers", "period", "use_sentiment", "positions"]
+  }
+}
