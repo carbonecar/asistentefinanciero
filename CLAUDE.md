@@ -9,9 +9,8 @@ Multi-agent financial assistant for Argentine retail investors. Combines fixed i
 ## Setup inicial
 
 ```bash
-python3.11 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
 cp .env.example .env  # completar tokens y passwords
+make setup            # crea venv + instala deps + registra pre-commit hooks
 ```
 
 ## Commands

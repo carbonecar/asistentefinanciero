@@ -10,9 +10,10 @@ from financial_assistant.application.services.audit_service import AuditService
 from financial_assistant.application.services.market_data_service import MarketDataService
 from financial_assistant.application.services.news_service import NewsService
 from financial_assistant.application.services.portfolio_service import PortfolioService
-from financial_assistant.application.services.quant_service import QuantService
+from financial_assistant.application.services.quant_service import OptimizerProtocol, QuantService, SimulatorProtocol
 from financial_assistant.config.settings import Settings
-from financial_assistant.domain.models.analysis import OptimizedWeights
+from financial_assistant.domain.models.analysis import OptimizedWeights, SimulationResult
+from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.infrastructure.db.engine import build_engine, build_session_factory
 from financial_assistant.infrastructure.db.repositories.market_data_repository import (
     PostgresMarketDataRepository,
@@ -87,17 +88,22 @@ class Container:
 
         # Adaptadores internos que ajustan la firma de optimizer y simulator
         # a los protocolos esperados por QuantService
-        class _OptimizerAdapter:
+        class _OptimizerAdapter(OptimizerProtocol):
             """Adapta PortfolioOptimizer al protocolo OptimizerProtocol de QuantService."""
 
-            def minimum_variance(self, ohlcv_by_ticker: dict, sentiment_map: dict) -> object:  # type: ignore[type-arg]
+            def minimum_variance(
+                self, ohlcv_by_ticker: dict[str, list[OHLCV]], sentiment_map: dict[str, float]
+            ) -> OptimizedWeights | None:
                 return optimizer.minimum_variance(ohlcv_by_ticker, sentiment_map)
 
-        class _SimulatorAdapter:
+        class _SimulatorAdapter(SimulatorProtocol):
             """Adapta MonteCarloSimulator al protocolo SimulatorProtocol de QuantService."""
 
-            def simulate(self, weights: object, ohlcv_by_ticker: dict, initial_value: float) -> object:  # type: ignore[type-arg]
-                assert isinstance(weights, OptimizedWeights)
+            def simulate(
+                self, weights: OptimizedWeights | None, ohlcv_by_ticker: dict[str, list[OHLCV]], initial_value: float
+            ) -> SimulationResult | None:
+                if weights is None:
+                    return None
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
 
         quant_service = QuantService(portfolio_repo, market_gateway, _OptimizerAdapter(), _SimulatorAdapter())

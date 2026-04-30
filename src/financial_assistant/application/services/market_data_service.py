@@ -1,3 +1,5 @@
+from typing import Literal
+
 from financial_assistant.application.dtos.requests import FetchMarketDataCommand
 from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
@@ -22,6 +24,6 @@ class MarketDataService:
             results[ticker] = records
         return results
 
-    async def get_benchmark(self, benchmark: str = "SPY") -> list[OHLCV]:
+    async def get_benchmark(self, benchmark: Literal["SPY", "^GSPC", "GC=F"] = "SPY") -> list[OHLCV]:
         benchmark_list: list[OHLCV] = await self._gateway.fetch_benchmark(benchmark)
         return benchmark_list

@@ -1,8 +1,25 @@
+from abc import ABC
+
 from financial_assistant.application.dtos.requests import OptimizePortfolioQuery
-from financial_assistant.domain.models.analysis import QuantResult
+from financial_assistant.domain.models.analysis import OptimizedWeights, QuantResult, SimulationResult
+from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.domain.models.news import SentimentResult
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
 from financial_assistant.domain.ports.repositories import IPortfolioRepository
+
+
+class OptimizerProtocol(ABC):
+    def minimum_variance(
+        self, ohlcv_by_ticker: dict[str, list[OHLCV]], sentiment_map: dict[str, float]
+    ) -> OptimizedWeights | None:
+        raise NotImplementedError
+
+
+class SimulatorProtocol(ABC):
+    def simulate(
+        self, weights: OptimizedWeights | None, ohlcv_by_ticker: dict[str, list[OHLCV]], initial_value: float
+    ) -> SimulationResult | None:
+        raise NotImplementedError
 
 
 class QuantService:
@@ -10,8 +27,8 @@ class QuantService:
         self,
         portfolio_repo: IPortfolioRepository,
         market_gateway: IMarketDataGateway,
-        optimizer: "OptimizerProtocol",
-        simulator: "SimulatorProtocol",
+        optimizer: OptimizerProtocol,
+        simulator: SimulatorProtocol,
     ) -> None:
         self._portfolio_repo = portfolio_repo
         self._market_gateway = market_gateway
@@ -48,13 +65,3 @@ class QuantService:
             simulation=simulation,
             sentiment_adjusted=query.use_sentiment and bool(sentiment_map),
         )
-
-
-class OptimizerProtocol:
-    def minimum_variance(self, ohlcv_by_ticker: dict, sentiment_map: dict) -> object:  # type: ignore[type-arg]
-        raise NotImplementedError
-
-
-class SimulatorProtocol:
-    def simulate(self, weights: object, ohlcv_by_ticker: dict, initial_value: float) -> object:  # type: ignore[type-arg]
-        raise NotImplementedError

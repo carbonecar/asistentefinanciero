@@ -24,7 +24,7 @@ class FinBERTSentimentAnalyzer:
 
     def _get_pipeline(self) -> Any:
         if self._pipeline is None:
-            from transformers import pipeline  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
+            from transformers import pipeline  # pylint: disable=import-outside-toplevel
 
             logger.info("[FinBERT] Loading model %s (first call — may take a moment)", _MODEL_NAME)
             self._pipeline = pipeline(
@@ -50,7 +50,7 @@ class FinBERTSentimentAnalyzer:
 
         texts = [a.full_text[:1024] for a in articles]  # hard cap before tokenizer
         try:
-            predictions: list[dict] = pipe(texts, batch_size=8)
+            predictions: list[dict[str, Any]] = pipe(texts, batch_size=8)
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("[FinBERT] Inference failed for %s — falling back to neutral", ticker)
             return SentimentResult(

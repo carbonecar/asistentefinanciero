@@ -20,8 +20,7 @@ def make_news_scout_node(news_service: NewsService):  # type: ignore[no-untyped-
             return {
                 "news_results": [],
                 "errors": [
-                    "No se detectaron tickers en el mensaje. "
-                    "Mencioná el ticker específico (ej: AAPL, GGAL.BA)."
+                    "No se detectaron tickers en el mensaje. Mencioná el ticker específico (ej: AAPL, GGAL.BA)."
                 ],
             }
 

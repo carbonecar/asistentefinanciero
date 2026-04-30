@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import partial
+from typing import Any
 
 import yfinance as yf
 
@@ -26,13 +27,11 @@ class YFinanceNewsGateway(INewsGateway):
             return []
 
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None, partial(self._fetch_sync, ticker_symbol, max_results)
-        )
+        return await loop.run_in_executor(None, partial(self._fetch_sync, ticker_symbol, max_results))
 
     def _fetch_sync(self, ticker_symbol: str, max_results: int) -> list[NewsArticle]:
         try:
-            raw_news: list[dict] = yf.Ticker(ticker_symbol).news or []
+            raw_news: list[dict[str, Any]] = yf.Ticker(ticker_symbol).news or []
         except Exception:  # pylint: disable=broad-exception-caught
             logger.warning("[YFinanceNews] Failed to fetch news for %s", ticker_symbol)
             return []
@@ -40,23 +39,21 @@ class YFinanceNewsGateway(INewsGateway):
         articles: list[NewsArticle] = []
         for item in raw_news[:max_results]:
             # yfinance >=0.2.50 nests all fields under item["content"]
-            payload: dict = item.get("content") or item
+            payload: dict[str, Any] = item.get("content") or item
 
             # Parse publish date — new format uses ISO string, old format uses unix timestamp
             pub_date_raw = payload.get("pubDate") or payload.get("displayTime")
             if pub_date_raw:
                 try:
-                    published_at = datetime.fromisoformat(
-                        pub_date_raw.replace("Z", "+00:00")
-                    )
+                    published_at = datetime.fromisoformat(pub_date_raw.replace("Z", "+00:00"))
                 except (ValueError, AttributeError):
-                    published_at = datetime.now(tz=timezone.utc)
+                    published_at = datetime.now(tz=UTC)
             else:
                 ts = payload.get("providerPublishTime")
                 try:
-                    published_at = datetime.fromtimestamp(ts, tz=timezone.utc) if ts else datetime.now(tz=timezone.utc)
+                    published_at = datetime.fromtimestamp(ts, tz=UTC) if ts else datetime.now(tz=UTC)
                 except (TypeError, ValueError, OSError):
-                    published_at = datetime.now(tz=timezone.utc)
+                    published_at = datetime.now(tz=UTC)
 
             title = payload.get("title") or ""
             summary = payload.get("summary") or payload.get("description") or ""
@@ -68,7 +65,11 @@ class YFinanceNewsGateway(INewsGateway):
 
             # Source name
             provider = payload.get("provider") or {}
-            source = (provider.get("displayName") if isinstance(provider, dict) else None) or payload.get("publisher") or "Yahoo Finance"
+            source = (
+                (provider.get("displayName") if isinstance(provider, dict) else None)
+                or payload.get("publisher")
+                or "Yahoo Finance"
+            )
 
             articles.append(
                 NewsArticle(
