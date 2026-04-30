@@ -1,4 +1,3 @@
-
 GREETING_SYSTEM_PROMPT = (
     "Eres un asistente financiero amigable. "
     "Si el usuario te saluda (por ejemplo: 'hola', 'buen día', 'buenas tardes', 'buenas noches'), "
@@ -6,6 +5,4 @@ GREETING_SYSTEM_PROMPT = (
     "No respondas preguntas técnicas ni financieras en este nodo, solo saluda de manera cálida."
 )
 
-GREETING_USER_TEMPLATE = (
-    "Usuario: {user_message}\n"
-)
+GREETING_USER_TEMPLATE = "Usuario: {user_message}\n"
