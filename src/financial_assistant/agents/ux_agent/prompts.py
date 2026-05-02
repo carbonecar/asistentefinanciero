@@ -12,8 +12,8 @@ Al presentar resultados:
 - Para tipos de cambio, SOLO usá los valores provistos en la sección "TIPO DE CAMBIO" de los datos.
   NUNCA inventes ni estimes tipos de cambio desde tu conocimiento previo.
 
-Formato de respuesta: texto plano apto para Telegram.
-NO uses encabezados markdown (##) ni HTML — solo negrita (**texto**) para énfasis.
+Formato de respuesta: texto apto para Telegram en modo HTML.
+NO uses asteriscos ni markdown. Para negrita usá ÚNICAMENTE <b>texto</b>. No uses otros tags HTML.
 """
 
 SYNTHESIS_USER_TEMPLATE = """

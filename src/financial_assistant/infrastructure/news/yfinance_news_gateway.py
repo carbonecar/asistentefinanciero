@@ -78,7 +78,7 @@ class YFinanceNewsGateway(INewsGateway):
                     url=url,
                     published_at=published_at,
                     source=source,
-                    content=summary,
+                    content="",
                 )
             )
 

@@ -1,6 +1,7 @@
 import asyncio
 import html
 import logging
+import re
 import traceback
 from typing import Any, cast
 
@@ -24,13 +25,18 @@ INTENT_MESSAGES = {
 
 _TYPING_INTERVAL = 4.0  # Telegram typing action expires after 5s
 
+# Etiquetas Telegram permitidas en modo HTML. Estrategia: escapar todo el texto,
+# luego restaurar sólo estas etiquetas para que Telegram las renderice.
+_SAFE_HTML_TAG = re.compile(r"&lt;(/?)(b|i|u|s|code)&gt;")
+
+
+def _sanitize_for_html_mode(text: str) -> str:
+    escaped = html.escape(text)
+    return _SAFE_HTML_TAG.sub(r"<\1\2>", escaped)
+
 
 async def _safe_answer(target: Message, text: str) -> None:
-    """Send LLM response using HTML mode with escaped text.
-    html.escape() neutralizes <, >, & so the LLM output can never produce
-    broken entities, while still letting us use <b>/<i> manually if needed.
-    """
-    await target.answer(html.escape(text), parse_mode=ParseMode.HTML)
+    await target.answer(_sanitize_for_html_mode(text), parse_mode=ParseMode.HTML)
 
 
 async def _keep_typing(bot: Bot, chat_id: int, stop: asyncio.Event) -> None:
