@@ -53,12 +53,14 @@ class FinBERTSentimentAnalyzer:
             predictions: list[dict[str, Any]] = pipe(texts, batch_size=8)
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("[FinBERT] Inference failed for %s — falling back to neutral", ticker)
+            # article_count=0 distinguishes this fallback from a genuine neutral result
+            # (genuine neutral always has article_count > 0 because the pipeline ran).
             return SentimentResult(
                 ticker=ticker,
                 score=0.0,
                 label="neutral",
-                article_count=len(articles),
-                representative_headlines=tuple(a.title for a in articles[:3] if a.title),
+                article_count=0,
+                representative_headlines=(),
             )
 
         numeric_scores: list[float] = []
