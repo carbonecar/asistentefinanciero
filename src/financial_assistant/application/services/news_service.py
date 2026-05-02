@@ -33,6 +33,17 @@ class NewsService:
                 max_results=query.max_articles_per_ticker,
             )
             if not articles:
+                # article_count=0 signals "no coverage" — _build_data_summary displays
+                # "sin análisis disponible" to the user via the I-1/I-3 invariant.
+                results.append(
+                    SentimentResult(
+                        ticker=ticker,
+                        score=0.0,
+                        label="neutral",
+                        article_count=0,
+                        representative_headlines=(),
+                    )
+                )
                 continue
             result = self._sentiment.score(ticker, articles)
             results.append(result)
