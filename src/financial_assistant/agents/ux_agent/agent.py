@@ -133,6 +133,16 @@ def _build_data_summary(state: AgentState) -> str:
             parts.append(
                 f"  {result.ticker}: {result.label} (score: {result.score:+.3f}, {result.article_count} articles)"
             )
+            if result.article_count == 0:
+                parts.append(
+                    f"    [{result.ticker}] sin análisis disponible"
+                    " — error del modelo o sin artículos procesados"
+                )
+            elif result.article_count < 3:
+                parts.append(
+                    f"    [{result.ticker}] baja cantidad de artículos"
+                    " — señal de menor confianza"
+                )
             for headline in result.representative_headlines:
                 parts.append(f"    - {headline}")
     elif "news" in intents:
