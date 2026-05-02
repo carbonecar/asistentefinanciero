@@ -80,7 +80,7 @@ def route_by_intent(state: AgentState) -> list[str]:
     el flujo luego del supervisor.
 
     Separa las intenciones en dos grupos:
-    - blocking: intenciones que deben ejecutarse primero (actualmente solo 'data_fetch')
+    - blocking: intenciones que deben ejecutarse primero (data_fetch y news)
     - non_blocking: el resto de las intenciones
 
     Si hay intenciones de ambos tipos, ejecuta primero solo los blockers.
@@ -111,8 +111,8 @@ def post_fetch_route(state: AgentState) -> list[str]:
     Función de routing condicional ejecutada luego del data_fetcher.
 
     Despacha las intenciones non_blocking que quedaron pendientes mientras
-    el data_fetcher (blocking) se ejecutaba. Si no hay intenciones pendientes,
-    deriva directamente al fx_fetcher para continuar hacia el ux_agent.
+    los nodos blocking (data_fetcher, news_scout) se ejecutaban. Si no hay
+    intenciones pendientes, deriva directamente al fx_fetcher.
 
     Args:
         state: Estado compartido del grafo.
@@ -149,7 +149,8 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     Flujo general:
         supervisor → [routing condicional por intención]
             → data_fetcher → post_fetch_router → [intenciones pendientes]
-            → auditor / quant / news_scout → fx_fetcher → ux_agent → END
+            → news_scout  → post_fetch_router → [intenciones pendientes]
+            → auditor / quant → fx_fetcher → ux_agent → END
             → unsupported → END
 
     Args:
@@ -196,12 +197,13 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
 
     workflow.add_conditional_edges(Node.SUPERVISOR, route_by_intent, _specialist_map)
 
-    # data_fetcher siempre va a post_fetch_router para despachar intenciones pendientes
+    # Nodos blocking: siempre van a post_fetch_router para despachar intenciones pendientes
     workflow.add_edge(Node.DATA_FETCHER, Node.POST_FETCH_ROUTER)
+    workflow.add_edge(Node.NEWS_SCOUT, Node.POST_FETCH_ROUTER)
     workflow.add_conditional_edges(Node.POST_FETCH_ROUTER, post_fetch_route, _specialist_map)
 
-    # Los especialistas restantes convergen en fx_fetcher
-    for node in (Node.AUDITOR, Node.QUANT, Node.NEWS_SCOUT):
+    # Especialistas no-blocking convergen en fx_fetcher
+    for node in (Node.AUDITOR, Node.QUANT):
         workflow.add_edge(node, Node.FX_FETCHER)
 
     workflow.add_edge(Node.FX_FETCHER, Node.UX_AGENT)

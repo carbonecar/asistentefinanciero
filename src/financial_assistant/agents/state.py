@@ -37,7 +37,8 @@ VALID_INTENTS: frozenset[str] = frozenset(NODE_FOR_INTENT)
 
 # Intents that must complete before others can fan-out in parallel.
 # When mixed with other intents, these run first; post_fetch_router dispatches the rest.
-BLOCKING_INTENTS: frozenset[str] = frozenset({"data_fetch"})
+# "news" is blocking because news_results must be in state before quant reads them.
+BLOCKING_INTENTS: frozenset[str] = frozenset({"data_fetch", "news"})
 
 # "general" skips specialists but still passes through fx_fetcher before ux_agent.
 # This dict overrides the logical node from NODE_FOR_INTENT to the actual graph target.
