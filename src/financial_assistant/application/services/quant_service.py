@@ -49,7 +49,14 @@ class QuantService:
             records = await self._market_gateway.fetch_ohlcv(ticker, period="1y")
             ohlcv_by_ticker[ticker] = records
 
-        sentiment_map = {r.ticker: r.score for r in sentiment_results} if sentiment_results else {}
+        # Only include tickers with actual analysis (article_count > 0).
+        # article_count=0 means no articles were found or FinBERT failed — score=0.0
+        # in that case is absence-of-data, not a confirmed neutral signal.
+        sentiment_map = {
+            r.ticker: r.score
+            for r in sentiment_results
+            if r.article_count > 0
+        } if sentiment_results else {}
 
         weights = self._optimizer.minimum_variance(
             ohlcv_by_ticker,
