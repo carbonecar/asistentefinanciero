@@ -107,6 +107,11 @@ def _build_data_summary(state: AgentState) -> str:
                 parts.append(f"  Expected return: {w.expected_annual_return:.2%}")
                 parts.append(f"  Volatility: {w.annual_volatility:.2%}")
                 parts.append(f"  Sharpe ratio: {w.sharpe_ratio:.2f}")
+                if qr.sentiment_adjusted:
+                    parts.append(
+                        "  Sentiment adjustment: los retornos esperados fueron"
+                        " modificados por el sentimiento de las noticias disponibles."
+                    )
             if qr.simulation and qr.simulation.percentile_50:
                 sim = qr.simulation
                 final_median = sim.percentile_50[-1]
