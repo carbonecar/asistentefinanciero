@@ -23,3 +23,5 @@ class SentimentResult:
     label: str  # "positive", "negative", "neutral"
     article_count: int
     representative_headlines: tuple[str, ...]
+    analysis_failed: bool = False  # True when the model raised during inference
+    model_name: str = ""  # identifier of the model that produced this result

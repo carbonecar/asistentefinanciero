@@ -3,9 +3,13 @@ Unit tests for FinBERTSentimentAnalyzer.score().
 
 Covers:
 - Fallback when pipeline inference raises: article_count=0 distinguishes
-  technical failure from genuine neutral result.
-- Normal path: successful inference produces correct label/score/article_count.
-- Empty articles: early return path is unaffected by this change.
+  technical failure from genuine neutral result; analysis_failed=True.
+- Normal path: successful inference produces correct label/score/article_count;
+  analysis_failed=False, model_name is set.
+- Empty articles: early return path; analysis_failed=False, model_name is set.
+- Traceability fields: analysis_failed and model_name across all paths.
+- Backwards compatibility: SentimentResult constructors without the new fields
+  still work via default values.
 
 No real model is loaded — the internal _pipeline attribute is replaced with
 a MagicMock so _get_pipeline() returns it directly (lazy-load is skipped).
@@ -14,8 +18,11 @@ a MagicMock so _get_pipeline() returns it directly (lazy-load is skipped).
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
-from financial_assistant.domain.models.news import NewsArticle
-from financial_assistant.infrastructure.nlp.finbert_sentiment_analyzer import FinBERTSentimentAnalyzer
+from financial_assistant.domain.models.news import NewsArticle, SentimentResult
+from financial_assistant.infrastructure.nlp.finbert_sentiment_analyzer import (
+    FinBERTSentimentAnalyzer,
+    _MODEL_NAME,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -85,6 +92,14 @@ class TestFinBERTFallbackOnInferenceFailure:
             "article_count=0 on failure; genuine neutral returns article_count>0"
         )
 
+    def test_analysis_failed_is_true(self):
+        result = _analyzer_failing().score("AAPL", [_article()])
+        assert result.analysis_failed is True
+
+    def test_model_name_is_set_on_failure(self):
+        result = _analyzer_failing().score("AAPL", [_article()])
+        assert result.model_name == _MODEL_NAME
+
 
 # ---------------------------------------------------------------------------
 # Normal path — successful inference
@@ -126,9 +141,17 @@ class TestFinBERTNormalPath:
         result = _analyzer_with(predictions).score("AAPL", [_article()])
         assert result.label == "neutral"
 
+    def test_analysis_failed_is_false_on_success(self):
+        result = _analyzer_with([{"label": "positive", "score": 0.9}]).score("AAPL", [_article()])
+        assert result.analysis_failed is False
+
+    def test_model_name_is_set_on_success(self):
+        result = _analyzer_with([{"label": "positive", "score": 0.9}]).score("AAPL", [_article()])
+        assert result.model_name == _MODEL_NAME
+
 
 # ---------------------------------------------------------------------------
-# Empty articles — early return path (unchanged by I-1)
+# Empty articles — early return path
 # ---------------------------------------------------------------------------
 
 
@@ -151,3 +174,82 @@ class TestFinBERTEmptyArticles:
         analyzer = FinBERTSentimentAnalyzer()
         analyzer.score("AAPL", [])
         assert analyzer._pipeline is None
+
+    def test_analysis_failed_is_false_for_empty_articles(self):
+        # Empty articles is not a technical failure — the model was never invoked.
+        result = FinBERTSentimentAnalyzer().score("AAPL", [])
+        assert result.analysis_failed is False
+
+    def test_model_name_is_set_for_empty_articles(self):
+        result = FinBERTSentimentAnalyzer().score("AAPL", [])
+        assert result.model_name == _MODEL_NAME
+
+
+# ---------------------------------------------------------------------------
+# Traceability fields — all fields across all paths
+# ---------------------------------------------------------------------------
+
+
+class TestSentimentResultTraceability:
+    """
+    Consolidates traceability assertions: every SentimentResult produced by
+    FinBERTSentimentAnalyzer must carry model_name and a correct analysis_failed
+    flag, regardless of path (success / inference failure / empty input).
+    """
+
+    def test_failure_path_flags_are_mutually_exclusive_with_success(self):
+        failing = _analyzer_failing().score("AAPL", [_article()])
+        success = _analyzer_with([{"label": "positive", "score": 0.9}]).score("AAPL", [_article()])
+        assert failing.analysis_failed is True
+        assert success.analysis_failed is False
+
+    def test_all_paths_carry_same_model_name(self):
+        results = [
+            _analyzer_failing().score("AAPL", [_article()]),
+            _analyzer_with([{"label": "neutral", "score": 0.5}]).score("AAPL", [_article()]),
+            FinBERTSentimentAnalyzer().score("AAPL", []),
+        ]
+        for r in results:
+            assert r.model_name == _MODEL_NAME, f"model_name missing in {r}"
+
+    def test_model_name_is_not_empty_string_on_any_path(self):
+        results = [
+            _analyzer_failing().score("TSLA", [_article()]),
+            _analyzer_with([{"label": "negative", "score": 0.8}]).score("TSLA", [_article()]),
+            FinBERTSentimentAnalyzer().score("TSLA", []),
+        ]
+        for r in results:
+            assert r.model_name != ""
+
+
+# ---------------------------------------------------------------------------
+# Backwards compatibility — SentimentResult without new fields still works
+# ---------------------------------------------------------------------------
+
+
+class TestSentimentResultBackwardsCompat:
+    def test_constructor_without_new_fields_uses_defaults(self):
+        # Existing code that builds SentimentResult without analysis_failed /
+        # model_name (e.g. NewsService fallback, test helpers) must keep working.
+        result = SentimentResult(
+            ticker="AAPL",
+            score=0.0,
+            label="neutral",
+            article_count=0,
+            representative_headlines=(),
+        )
+        assert result.analysis_failed is False
+        assert result.model_name == ""
+
+    def test_explicit_analysis_failed_true_is_preserved(self):
+        result = SentimentResult(
+            ticker="AAPL",
+            score=0.0,
+            label="neutral",
+            article_count=0,
+            representative_headlines=(),
+            analysis_failed=True,
+            model_name="test-model",
+        )
+        assert result.analysis_failed is True
+        assert result.model_name == "test-model"

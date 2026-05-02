@@ -44,6 +44,8 @@ class FinBERTSentimentAnalyzer:
                 label="neutral",
                 article_count=0,
                 representative_headlines=(),
+                analysis_failed=False,
+                model_name=_MODEL_NAME,
             )
 
         pipe = self._get_pipeline()
@@ -61,6 +63,8 @@ class FinBERTSentimentAnalyzer:
                 label="neutral",
                 article_count=0,
                 representative_headlines=(),
+                analysis_failed=True,
+                model_name=_MODEL_NAME,
             )
 
         numeric_scores: list[float] = []
@@ -86,4 +90,6 @@ class FinBERTSentimentAnalyzer:
             label=label,
             article_count=len(articles),
             representative_headlines=tuple(a.title for a in articles[:3] if a.title),
+            analysis_failed=False,
+            model_name=_MODEL_NAME,
         )
