@@ -9,15 +9,14 @@ a confirmed neutral signal (Kondratenko §4 / Arratia §4).
 No DB, no network — only AsyncMock / MagicMock.
 """
 
+from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from decimal import Decimal
-
 from financial_assistant.application.dtos.requests import OptimizePortfolioQuery
 from financial_assistant.application.services.quant_service import QuantService
-from financial_assistant.domain.models.analysis import OptimizedWeights, QuantResult
+from financial_assistant.domain.models.analysis import OptimizedWeights
 from financial_assistant.domain.models.news import SentimentResult
 from financial_assistant.domain.models.portfolio import AssetType, Portfolio, Position
 

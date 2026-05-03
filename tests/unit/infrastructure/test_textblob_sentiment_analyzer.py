@@ -16,8 +16,8 @@ from datetime import UTC, datetime
 
 from financial_assistant.domain.models.news import NewsArticle
 from financial_assistant.infrastructure.nlp.sentiment_analyzer import (
-    TextBlobSentimentAnalyzer,
     _MODEL_NAME,
+    TextBlobSentimentAnalyzer,
 )
 
 # ---------------------------------------------------------------------------

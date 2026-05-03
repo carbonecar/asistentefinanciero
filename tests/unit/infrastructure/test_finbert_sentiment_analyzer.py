@@ -20,8 +20,8 @@ from unittest.mock import MagicMock
 
 from financial_assistant.domain.models.news import NewsArticle, SentimentResult
 from financial_assistant.infrastructure.nlp.finbert_sentiment_analyzer import (
-    FinBERTSentimentAnalyzer,
     _MODEL_NAME,
+    FinBERTSentimentAnalyzer,
 )
 
 # ---------------------------------------------------------------------------
