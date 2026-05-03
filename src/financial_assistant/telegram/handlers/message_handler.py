@@ -25,12 +25,14 @@ INTENT_MESSAGES = {
 
 _TYPING_INTERVAL = 4.0  # Telegram typing action expires after 5s
 
-# Etiquetas Telegram permitidas en modo HTML. Estrategia: escapar todo el texto,
-# luego restaurar sólo estas etiquetas para que Telegram las renderice.
+# Etiquetas Telegram permitidas en modo HTML. Estrategia: normalizar markdown bold,
+# escapar todo el texto, luego restaurar sólo estas etiquetas.
 _SAFE_HTML_TAG = re.compile(r"&lt;(/?)(b|i|u|s|code)&gt;")
+_MARKDOWN_BOLD = re.compile(r"\*\*([^*\n]+?)\*\*")
 
 
 def _sanitize_for_html_mode(text: str) -> str:
+    text = _MARKDOWN_BOLD.sub(r"<b>\1</b>", text)
     escaped = html.escape(text)
     return _SAFE_HTML_TAG.sub(r"<\1\2>", escaped)
 

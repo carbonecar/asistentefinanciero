@@ -129,23 +129,62 @@ def make_data_fetcher_node(
             quantity = float(pos.get("quantity") or 0)
             avg_cost_usd = float(pos.get("avg_cost_usd") or 0)
             asset_type_raw = str(pos.get("asset_type") or "stock")
+            action = str(pos.get("action") or "buy").lower()
+
             if not ticker or quantity <= 0:
                 logger.warning("[DataFetcher] user=%s — skipping incomplete position: %s", user_id, pos)
                 continue
-            try:
-                add_cmd = AddPositionCommand(
-                    user_id=user_id,
-                    ticker=ticker,
-                    asset_type=AssetType(asset_type_raw),
-                    quantity=Decimal(str(quantity)),
-                    avg_cost_usd=Decimal(str(avg_cost_usd)),
-                )
-                await portfolio_service.add_position(add_cmd)
-                logger.info(
-                    "[DataFetcher] user=%s — position saved: %s x%s @ $%s", user_id, ticker, quantity, avg_cost_usd
-                )
-            except Exception as exc:  # pylint: disable=broad-exception-caught
-                logger.error("[DataFetcher] user=%s — failed to save position %s: %s", user_id, ticker, exc)
+
+            if action == "sell":
+                try:
+                    portfolio = await portfolio_service.get_or_create(user_id)
+                    existing = portfolio.get_position(ticker)
+                    if existing is None:
+                        logger.warning(
+                            "[DataFetcher] user=%s — sell: no existing position for %s, nothing to reduce",
+                            user_id, ticker,
+                        )
+                    elif Decimal(str(quantity)) >= existing.quantity:
+                        await portfolio_service.remove_position(user_id, ticker)
+                        logger.info(
+                            "[DataFetcher] user=%s — full exit: removed %s @ sale_ref $%s",
+                            user_id, ticker, avg_cost_usd,
+                        )
+                    else:
+                        new_qty = existing.quantity - Decimal(str(quantity))
+                        reduce_cmd = AddPositionCommand(
+                            user_id=user_id,
+                            ticker=ticker,
+                            asset_type=existing.asset_type,
+                            quantity=new_qty,
+                            avg_cost_usd=existing.avg_cost_usd,
+                        )
+                        await portfolio_service.add_position(reduce_cmd)
+                        logger.info(
+                            "[DataFetcher] user=%s — partial exit: %s reduced to %s units @ cost $%s",
+                            user_id, ticker, new_qty, existing.avg_cost_usd,
+                        )
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("[DataFetcher] user=%s — failed to process sell for %s: %s", user_id, ticker, exc)
+            else:
+                if avg_cost_usd <= 0:
+                    logger.warning("[DataFetcher] user=%s — skipping buy without price: %s", user_id, pos)
+                    continue
+                try:
+                    add_cmd = AddPositionCommand(
+                        user_id=user_id,
+                        ticker=ticker,
+                        asset_type=AssetType(asset_type_raw),
+                        quantity=Decimal(str(quantity)),
+                        avg_cost_usd=Decimal(str(avg_cost_usd)),
+                    )
+                    await portfolio_service.add_position(add_cmd)
+                    logger.info(
+                        "[DataFetcher] user=%s — position saved: %s x%s @ $%s",
+                        user_id, ticker, quantity, avg_cost_usd,
+                    )
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("[DataFetcher] user=%s — failed to save position %s: %s", user_id, ticker, exc)
 
         # Descargar y persistir datos de mercado
         try:

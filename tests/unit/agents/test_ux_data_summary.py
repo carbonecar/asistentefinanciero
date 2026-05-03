@@ -35,8 +35,6 @@ _BASE_STATE: dict = {
     "exchange_rates": None,
     "final_response": None,
     "errors": [],
-    "quantity": 0,
-    "avg_cost_usd": 0,
 }
 
 
@@ -165,3 +163,113 @@ class TestMultipleTickers:
         msft_section = summary[summary.index("MSFT"):]
         assert "sin análisis disponible" not in msft_section
         assert "baja cantidad" not in msft_section
+
+
+# ---------------------------------------------------------------------------
+# Helpers for positions / sell summary tests
+# ---------------------------------------------------------------------------
+
+
+def _data_fetch_state(positions: list[dict]) -> dict:
+    return {**_BASE_STATE, "intents": ["data_fetch"], "positions": positions}
+
+
+def _buy(ticker: str = "AAPL", qty: float = 10.0, price: float = 180.0) -> dict:
+    return {"ticker": ticker, "quantity": qty, "avg_cost_usd": price, "asset_type": "stock", "action": "buy"}
+
+
+def _sell(ticker: str = "AAPL", qty: float = 5.0, price: float = 200.0) -> dict:
+    return {"ticker": ticker, "quantity": qty, "avg_cost_usd": price, "asset_type": "stock", "action": "sell"}
+
+
+# ---------------------------------------------------------------------------
+# Compras registradas / pendientes
+# ---------------------------------------------------------------------------
+
+
+class TestPositionsBuySummary:
+    def test_buy_with_price_appears_in_registered_section(self):
+        summary = _build_data_summary(_data_fetch_state([_buy("AAPL", qty=10.0, price=180.0)]))
+        assert "POSICIONES REGISTRADAS" in summary
+        assert "AAPL" in summary
+        assert "10" in summary
+        assert "180" in summary
+
+    def test_buy_without_price_appears_in_pending_section(self):
+        pos = _buy("TSLA", qty=5.0, price=0.0)
+        summary = _build_data_summary(_data_fetch_state([pos]))
+        assert "POSICIONES PENDIENTES" in summary
+        assert "TSLA" in summary
+        assert "POSICIONES REGISTRADAS" not in summary
+
+    def test_buy_without_price_not_in_registered_section(self):
+        pos = _buy("MSFT", qty=3.0, price=0.0)
+        summary = _build_data_summary(_data_fetch_state([pos]))
+        assert "POSICIONES REGISTRADAS" not in summary
+
+    def test_multiple_buys_separated_correctly(self):
+        positions = [
+            _buy("AAPL", qty=10.0, price=180.0),
+            _buy("TSLA", qty=5.0, price=0.0),
+        ]
+        summary = _build_data_summary(_data_fetch_state(positions))
+        assert "POSICIONES REGISTRADAS" in summary
+        assert "POSICIONES PENDIENTES" in summary
+        assert "AAPL" in summary
+        assert "TSLA" in summary
+
+    def test_no_positions_section_when_intent_is_not_data_fetch(self):
+        state = {**_BASE_STATE, "intents": ["audit"], "positions": [_buy("AAPL")]}
+        summary = _build_data_summary(state)
+        assert "POSICIONES REGISTRADAS" not in summary
+        assert "POSICIONES PENDIENTES" not in summary
+
+    def test_no_positions_section_when_positions_empty(self):
+        summary = _build_data_summary(_data_fetch_state([]))
+        assert "POSICIONES REGISTRADAS" not in summary
+        assert "POSICIONES PENDIENTES" not in summary
+
+    def test_default_action_treated_as_buy(self):
+        pos = {"ticker": "GOOG", "quantity": 2.0, "avg_cost_usd": 150.0, "asset_type": "stock"}
+        summary = _build_data_summary(_data_fetch_state([pos]))
+        assert "POSICIONES REGISTRADAS" in summary
+        assert "GOOG" in summary
+
+
+# ---------------------------------------------------------------------------
+# Salidas informadas
+# ---------------------------------------------------------------------------
+
+
+class TestSellSummary:
+    def test_sell_appears_in_salidas_section(self):
+        summary = _build_data_summary(_data_fetch_state([_sell("AAPL", qty=5.0, price=200.0)]))
+        assert "SALIDAS INFORMADAS" in summary
+        assert "AAPL" in summary
+        assert "5" in summary
+
+    def test_sell_with_price_shows_price(self):
+        summary = _build_data_summary(_data_fetch_state([_sell("AAPL", qty=5.0, price=200.0)]))
+        assert "200" in summary
+
+    def test_sell_without_price_shows_sin_precio(self):
+        pos = _sell("AAPL", qty=5.0, price=0.0)
+        summary = _build_data_summary(_data_fetch_state([pos]))
+        assert "SALIDAS INFORMADAS" in summary
+        assert "sin precio de referencia" in summary
+
+    def test_sell_does_not_appear_in_registered_section(self):
+        summary = _build_data_summary(_data_fetch_state([_sell("AAPL")]))
+        assert "POSICIONES REGISTRADAS" not in summary
+
+    def test_buy_and_sell_both_shown_in_correct_sections(self):
+        positions = [_buy("MSFT", qty=10.0, price=300.0), _sell("AAPL", qty=5.0, price=200.0)]
+        summary = _build_data_summary(_data_fetch_state(positions))
+        assert "POSICIONES REGISTRADAS" in summary
+        assert "SALIDAS INFORMADAS" in summary
+        assert "MSFT" in summary
+        assert "AAPL" in summary
+
+    def test_sell_section_not_shown_when_no_sells(self):
+        summary = _build_data_summary(_data_fetch_state([_buy("AAPL", price=180.0)]))
+        assert "SALIDAS INFORMADAS" not in summary

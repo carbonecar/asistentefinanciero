@@ -40,8 +40,6 @@ def make_ux_node(  # type: ignore[no-untyped-def]
         current_prompt = SYNTHESIS_USER_TEMPLATE.format(
             user_message=user_message,
             intents=state.get("intents", []),
-            quantity=state.get("quantity", 0),
-            avg_cost_usd=state.get("avg_cost_usd", 0),
             data_summary=data_summary,
         )
 
@@ -166,6 +164,39 @@ def _build_data_summary(state: AgentState) -> str:
                 parts.append(f"  {ticker}: ${info['latest_close']:.2f} ({info['records_count']} records{date_range})")
         if failed_entries:
             parts.append(f"SIN DATOS PARA: {', '.join(failed_entries)} — ticker inválido o fuente no disponible.")
+
+    if "data_fetch" in intents and state.get("positions"):
+        buys = [p for p in state["positions"] if str(p.get("action") or "buy").lower() != "sell"]
+        sells = [p for p in state["positions"] if str(p.get("action") or "buy").lower() == "sell"]
+
+        saved = [p for p in buys if float(p.get("quantity") or 0) > 0 and float(p.get("avg_cost_usd") or 0) > 0]
+        pending = [p for p in buys if float(p.get("quantity") or 0) > 0 and float(p.get("avg_cost_usd") or 0) <= 0]
+
+        if saved:
+            parts.append("POSICIONES REGISTRADAS EN ESTA SESIÓN:")
+            for p in saved:
+                parts.append(
+                    f"  {p.get('ticker','?')}: {float(p.get('quantity',0)):.0f} unidades"
+                    f" @ USD {float(p.get('avg_cost_usd',0)):.2f}"
+                    f" ({p.get('asset_type','stock')})"
+                )
+        if pending:
+            parts.append("POSICIONES PENDIENTES (falta precio de referencia para registrar):")
+            for p in pending:
+                parts.append(
+                    f"  {p.get('ticker','?')}: {float(p.get('quantity',0)):.0f} unidades"
+                    " — pedí el precio al usuario"
+                )
+        if sells:
+            parts.append("SALIDAS INFORMADAS EN ESTA SESIÓN:")
+            for p in sells:
+                qty = float(p.get("quantity") or 0)
+                price = float(p.get("avg_cost_usd") or 0)
+                price_str = f" @ USD {price:.2f}" if price > 0 else " (sin precio de referencia)"
+                parts.append(
+                    f"  {p.get('ticker','?')}: salida de {qty:.0f} unidades{price_str}"
+                    f" ({p.get('asset_type','stock')})"
+                )
 
     if state.get("errors"):
         parts.append("INTERNAL ERRORS: " + " | ".join(state["errors"]))

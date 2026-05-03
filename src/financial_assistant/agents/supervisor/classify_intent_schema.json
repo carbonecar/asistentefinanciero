@@ -47,6 +47,12 @@
               "type": "string",
               "enum": ["stock", "etf", "bond_on", "crypto"],
               "description": "Tipo de activo"
+            },
+            "action": {
+              "type": "string",
+              "enum": ["buy", "sell"],
+              "description": "Tipo de movimiento: 'buy' para cargar una posición nueva o existente, 'sell' para registrar una salida informada por el usuario. Por defecto: 'buy'.",
+              "default": "buy"
             }
           },
           "required": ["ticker", "quantity", "avg_cost_usd", "asset_type"]
