@@ -1,5 +1,7 @@
 from financial_assistant.domain.models.news import NewsArticle, SentimentResult
 
+_MODEL_NAME = "textblob"
+
 
 class TextBlobSentimentAnalyzer:
     """
@@ -22,6 +24,8 @@ class TextBlobSentimentAnalyzer:
                 label="neutral",
                 article_count=0,
                 representative_headlines=(),
+                analysis_failed=False,
+                model_name=_MODEL_NAME,
             )
 
         avg_score = sum(scores) / len(scores)
@@ -39,4 +43,6 @@ class TextBlobSentimentAnalyzer:
             label=label,
             article_count=len(articles),
             representative_headlines=headlines,
+            analysis_failed=False,
+            model_name=_MODEL_NAME,
         )
