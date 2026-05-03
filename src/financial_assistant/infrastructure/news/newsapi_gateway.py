@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import partial
 
 from financial_assistant.domain.models.news import NewsArticle
@@ -40,7 +40,7 @@ class NewsAPIGateway(INewsGateway):
                 try:
                     published_at = datetime.fromisoformat(item["publishedAt"].replace("Z", "+00:00"))
                 except (ValueError, KeyError):
-                    published_at = datetime.utcnow()
+                    published_at = datetime.now(UTC)
 
                 articles.append(
                     NewsArticle(
