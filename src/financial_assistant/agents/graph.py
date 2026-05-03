@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 
 UNSUPPORTED_RESPONSE = (
     "Solo puedo ayudarte con:\n"
-    "• 📊 *Auditar* tu cartera\n"
-    "• ⚡ *Optimizar* tu portfolio\n"
-    "• 📰 *Noticias* y sentimiento de mercado\n"
-    "• ➕ *Agregar posiciones* a tu cartera"
+    "• 📊 <b>Auditar</b> tu cartera\n"
+    "• ⚡ <b>Optimizar</b> tu portfolio\n"
+    "• 📰 <b>Noticias</b> y sentimiento de mercado\n"
+    "• ➕ <b>Agregar posiciones</b> a tu cartera"
 )
 
 

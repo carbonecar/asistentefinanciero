@@ -7,10 +7,11 @@ from typing import Any, cast
 
 from aiogram import Bot, F, Router
 from aiogram.enums import ParseMode
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from langchain_core.messages import HumanMessage
 
 from financial_assistant.agents.state import AgentState, Intent
+from financial_assistant.telegram.keyboards.inline_keyboards import main_menu_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,10 @@ _TYPING_INTERVAL = 4.0  # Telegram typing action expires after 5s
 # escapar todo el texto, luego restaurar sólo estas etiquetas.
 _SAFE_HTML_TAG = re.compile(r"&lt;(/?)(b|i|u|s|code)&gt;")
 _MARKDOWN_BOLD = re.compile(r"\*\*([^*\n]+?)\*\*")
+_GREETING_RE = re.compile(
+    r"^\s*(?:hola|hi|inicio|buenas|hey|menú|menu|comenzar|start)\s*[!?.]*\s*$",
+    re.IGNORECASE | re.UNICODE,
+)
 
 
 def _sanitize_for_html_mode(text: str) -> str:
@@ -37,8 +42,12 @@ def _sanitize_for_html_mode(text: str) -> str:
     return _SAFE_HTML_TAG.sub(r"<\1\2>", escaped)
 
 
-async def _safe_answer(target: Message, text: str) -> None:
-    await target.answer(_sanitize_for_html_mode(text), parse_mode=ParseMode.HTML)
+async def _safe_answer(
+    target: Message, text: str, reply_markup: InlineKeyboardMarkup | None = None
+) -> None:
+    await target.answer(
+        _sanitize_for_html_mode(text), parse_mode=ParseMode.HTML, reply_markup=reply_markup
+    )
 
 
 async def _keep_typing(bot: Bot, chat_id: int, stop: asyncio.Event) -> None:
@@ -151,4 +160,5 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."
 
-    await _safe_answer(message, response_text)
+    reply_markup = main_menu_keyboard() if _GREETING_RE.match(message.text or "") else None
+    await _safe_answer(message, response_text, reply_markup=reply_markup)
