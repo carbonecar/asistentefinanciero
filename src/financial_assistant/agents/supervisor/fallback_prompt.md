@@ -15,7 +15,7 @@ Formato de respuesta (SOLO JSON, nada más):
   "intents": ["data_fetch"],
   "tickers": ["AAPL", "GOOGL"],
   "period": "1y", 
-  "use_sentiment": false,
+  "use_sentiment": true,
   "positions": [
     {"ticker": "AAPL", "quantity": 10, "avg_cost_usd": 0, "asset_type": "stock"},
     {"ticker": "GOOGL", "quantity": 10, "avg_cost_usd": 0, "asset_type": "stock"}
