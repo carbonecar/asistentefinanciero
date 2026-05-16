@@ -74,6 +74,17 @@ def _resolve(intent: str) -> str:
     return result
 
 
+def _resolve_destination(intent: str, use_sentiment: bool) -> str:
+    """
+    Resuelve el nodo destino para una intención, teniendo en cuenta si el
+    sentimiento está activo. Cuando optimize+use_sentiment=True, se enruta
+    a news_scout para que corra antes que quant y popule news_results.
+    """
+    if intent == "optimize" and use_sentiment:
+        return Node.NEWS_SCOUT
+    return _resolve(intent)
+
+
 def route_by_intent(state: AgentState) -> list[str]:
     """
     Función de routing condicional que determina a qué nodo(s) derivar
@@ -88,6 +99,8 @@ def route_by_intent(state: AgentState) -> list[str]:
     que los blockers hayan completado.
 
     Si todas las intenciones son del mismo tipo, las despacha todas directamente.
+    Cuando optimize+use_sentiment=True, enruta a news_scout primero para que
+    sentiment_router pueda derivar a quant con news_results ya populados.
 
     Args:
         state: Estado compartido del grafo.
@@ -96,14 +109,33 @@ def route_by_intent(state: AgentState) -> list[str]:
         Lista de nodos destino a los que derivar el flujo.
     """
     intents: list[Intent] = state.get("intents") or ["unsupported"]
+    use_sentiment: bool = state.get("use_sentiment", False)
     blocking = [i for i in intents if i in BLOCKING_INTENTS]
     non_blocking = [i for i in intents if i not in BLOCKING_INTENTS]
     if blocking and non_blocking:
         destinations = [_resolve(i) for i in blocking]
     else:
-        destinations = [_resolve(i) for i in intents]
+        seen: set[str] = set()
+        destinations = []
+        for i in intents:
+            dest = _resolve_destination(i, use_sentiment)
+            if dest not in seen:
+                seen.add(dest)
+                destinations.append(dest)
     logger.info("[GRAPH] supervisor → %s (intents=%s, tickers=%s)", destinations, intents, state.get("active_tickers"))
     return destinations
+
+
+def route_after_news_scout(state: AgentState) -> str:
+    """
+    Routing desde sentiment_router: si optimize está en los intents y
+    use_sentiment=True, deriva a quant (que ya puede leer news_results).
+    Caso contrario, va directo a fx_fetcher.
+    """
+    intents = state.get("intents") or []
+    if "optimize" in intents and state.get("use_sentiment", False):
+        return Node.QUANT
+    return Node.FX_FETCHER
 
 
 def post_fetch_route(state: AgentState) -> list[str]:
@@ -113,6 +145,7 @@ def post_fetch_route(state: AgentState) -> list[str]:
     Despacha las intenciones non_blocking que quedaron pendientes mientras
     el data_fetcher (blocking) se ejecutaba. Si no hay intenciones pendientes,
     deriva directamente al fx_fetcher para continuar hacia el ux_agent.
+    Aplica la misma lógica de optimize+use_sentiment que route_by_intent.
 
     Args:
         state: Estado compartido del grafo.
@@ -121,7 +154,16 @@ def post_fetch_route(state: AgentState) -> list[str]:
         Lista de nodos destino pendientes, o [fx_fetcher] si no hay ninguno.
     """
     intents = state.get("intents", [])
-    remaining = [_resolve(i) for i in intents if i not in BLOCKING_INTENTS]
+    use_sentiment: bool = state.get("use_sentiment", False)
+    seen: set[str] = set()
+    remaining: list[str] = []
+    for i in intents:
+        if i in BLOCKING_INTENTS:
+            continue
+        dest = _resolve_destination(i, use_sentiment)
+        if dest not in seen:
+            seen.add(dest)
+            remaining.append(dest)
     destinations = remaining or [Node.FX_FETCHER]
     logger.info("[GRAPH] post_fetch_router → %s", destinations)
     return destinations
@@ -176,11 +218,12 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service, portfolio_service))  # type: ignore[call-overload]
     workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))
     workflow.add_node(Node.QUANT, make_quant_node(quant_service))
-    workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service))
+    workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service, portfolio_service))  # type: ignore[call-overload]
     workflow.add_node(Node.FX_FETCHER, make_fx_fetcher_node(fx_gateway))
     workflow.add_node(Node.UX_AGENT, make_ux_node(**llm_kwargs))
     workflow.add_node(Node.UNSUPPORTED, unsupported_node)
     workflow.add_node(Node.POST_FETCH_ROUTER, lambda _: {})
+    workflow.add_node(Node.SENTIMENT_ROUTER, lambda _: {})
 
     # Punto de entrada
     workflow.set_entry_point(Node.SUPERVISOR)
@@ -200,9 +243,17 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.add_edge(Node.DATA_FETCHER, Node.POST_FETCH_ROUTER)
     workflow.add_conditional_edges(Node.POST_FETCH_ROUTER, post_fetch_route, _specialist_map)
 
-    # Los especialistas restantes convergen en fx_fetcher
-    for node in (Node.AUDITOR, Node.QUANT, Node.NEWS_SCOUT):
+    # auditor y quant convergen en fx_fetcher
+    for node in (Node.AUDITOR, Node.QUANT):
         workflow.add_edge(node, Node.FX_FETCHER)
+
+    # news_scout siempre pasa por sentiment_router, que decide si continúa a quant o fx_fetcher
+    workflow.add_edge(Node.NEWS_SCOUT, Node.SENTIMENT_ROUTER)
+    workflow.add_conditional_edges(
+        Node.SENTIMENT_ROUTER,
+        route_after_news_scout,
+        {Node.QUANT: Node.QUANT, Node.FX_FETCHER: Node.FX_FETCHER},
+    )
 
     workflow.add_edge(Node.FX_FETCHER, Node.UX_AGENT)
     workflow.add_edge(Node.UX_AGENT, END)

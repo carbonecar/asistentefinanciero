@@ -23,6 +23,7 @@ class Node:
     UX_AGENT = "ux_agent"
     UNSUPPORTED = "unsupported"
     POST_FETCH_ROUTER = "post_fetch_router"
+    SENTIMENT_ROUTER = "sentiment_router"
 
 
 NODE_FOR_INTENT: dict[str, str] = {
