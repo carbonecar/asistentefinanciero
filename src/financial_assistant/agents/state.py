@@ -7,7 +7,7 @@ from typing_extensions import TypedDict
 
 from financial_assistant.domain.models.analysis import AuditReport, QuantResult
 from financial_assistant.domain.models.fx import ExchangeRate
-from financial_assistant.domain.models.news import SentimentResult
+from financial_assistant.domain.models.news import DailySentiment
 
 Intent = Literal["audit", "optimize", "news", "data_fetch", "general", "unsupported"]
 FALLBACK_INTENT: list[Intent] = ["unsupported"]
@@ -64,7 +64,7 @@ class AgentState(TypedDict):
     market_data_result: dict[str, Any] | None
     audit_report: AuditReport | None
     quant_result: QuantResult | None
-    news_results: list[SentimentResult] | None
+    news_results: dict[str, list[DailySentiment]] | None
     exchange_rates: list[ExchangeRate] | None
 
     # ---- Final ----

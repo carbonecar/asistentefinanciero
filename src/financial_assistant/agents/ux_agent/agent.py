@@ -141,18 +141,19 @@ def _build_data_summary(state: AgentState) -> str:
         parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
     if state.get("news_results"):
-        parts.append("NEWS SENTIMENT:")
-        results = state["news_results"] or []
-        for result in results:
-            parts.append(
-                f"  {result.ticker}: {result.label} (score: {result.score:+.3f}, {result.article_count} articles)"
-            )
-            for headline in result.representative_headlines:
-                parts.append(f"    - {headline}")
+        parts.append("NEWS SENTIMENT (últimos 60 días):")
+        for ticker, daily in (state["news_results"] or {}).items():
+            if not daily:
+                continue
+            avg_score = sum(d.score for d in daily) / len(daily)
+            dominant = max(set(d.label for d in daily), key=lambda lbl: sum(1 for d in daily if d.label == lbl))
+            parts.append(f"  {ticker}: {dominant} (score prom: {avg_score:+.3f}, {len(daily)} días con noticias)")
+            for day in daily[-3:]:
+                parts.append(f"    {day.date}: {day.label} {day.score:+.4f} ({day.article_count} art.)")
     elif "news" in intents:
         parts.append(
             "NEWS STATUS: No se obtuvieron noticias. "
-            "Posibles causas: NEWSAPI_KEY no configurada, o no se detectaron tickers en el mensaje."
+            "Posibles causas: FINNHUB_API_KEY no configurada, o no se detectaron tickers en el mensaje."
         )
 
     if state.get("market_data_result"):

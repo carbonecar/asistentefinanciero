@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # NewsAPI
     newsapi_key: str = ""
 
+    # Finnhub (historical news)
+    finnhub_api_key: str = ""
+
     # DB
     sql_echo: bool = False  # set SQL_ECHO=true to log all SQL statements
 

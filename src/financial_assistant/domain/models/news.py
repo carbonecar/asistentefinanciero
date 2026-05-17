@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 
 @dataclass(frozen=True)
@@ -23,3 +23,14 @@ class SentimentResult:
     label: str  # "positive", "negative", "neutral"
     article_count: int
     representative_headlines: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DailySentiment:
+    """Sentiment score for a single ticker on a single calendar day."""
+
+    date: date
+    ticker: str
+    score: float  # [-1.0, 1.0]
+    label: str  # "positive", "negative", "neutral"
+    article_count: int
