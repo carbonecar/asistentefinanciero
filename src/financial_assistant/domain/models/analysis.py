@@ -31,6 +31,16 @@ class OptimizedWeights:
     expected_annual_return: float
     annual_volatility: float
     sharpe_ratio: float
+    expected_returns_per_ticker: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RebalancingTrade:
+    ticker: str
+    current_weight: float
+    target_weight: float
+    delta_weight: float  # positive = buy, negative = sell
+    trade_value_usd: float  # signed: positive = buy, negative = sell
 
 
 @dataclass
@@ -48,3 +58,5 @@ class QuantResult:
     optimized_weights: OptimizedWeights | None = None
     simulation: SimulationResult | None = None
     sentiment_adjusted: bool = False
+    current_weights: dict[str, float] = field(default_factory=dict)
+    rebalancing_trades: list[RebalancingTrade] = field(default_factory=list)
