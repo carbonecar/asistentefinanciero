@@ -38,13 +38,22 @@ class TestMarkdownBoldConversion:
         result = _sanitize_for_html_mode("**precio de referencia**")
         assert result == "<b>precio de referencia</b>"
 
-    def test_single_asterisk_not_converted(self):
+    def test_single_asterisk_at_boundary_converted_to_bold(self):
+        # *word* en límite de no-palabra → se convierte a <b>word</b>
         result = _sanitize_for_html_mode("*single*")
-        assert result == "*single*"
+        assert result == "<b>single</b>"
+
+    def test_single_asterisk_between_word_chars_not_converted(self):
+        # 5*180 — asterisco entre caracteres alfanuméricos no se convierte
+        assert _sanitize_for_html_mode("5*180") == "5*180"
+
+    def test_single_asterisk_no_closing_not_converted(self):
+        # Un solo * sin par de cierre no se convierte
+        assert "*suelto" in _sanitize_for_html_mode("precio *suelto sin cierre")
 
     def test_triple_asterisk_converts_inner_bold(self):
-        # ***triple*** → el regex encuentra **triple** adentro y lo convierte;
-        # el asterisco sobrante queda como literal: *<b>triple</b>*
+        # ***triple*** → single-bold convierte *triple* (inner), luego double-bold
+        # el resultado contiene <b>triple</b>
         result = _sanitize_for_html_mode("***triple***")
         assert "<b>triple</b>" in result
 

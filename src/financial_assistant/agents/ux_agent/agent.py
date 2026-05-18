@@ -1,4 +1,5 @@
 import logging
+import re
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -61,6 +62,24 @@ def make_ux_node(  # type: ignore[no-untyped-def]
             }
 
     return ux_node
+
+
+# Señales explícitas de que el usuario pidió ARS / tipo de cambio.
+# Cubre: pesos, ARS, equivalente, tipo de cambio, dólar + variantes, mep, ccl, mayorista, blue.
+_FX_SIGNAL_RE = re.compile(
+    r"\b(?:"
+    r"pesos?|ars|equivalente|"
+    r"tipo\s+de\s+cambio|"
+    r"d[oó]lar(?:\s+(?:oficial|blue|mep|ccl|mayorista))?|"
+    r"oficial|blue|mep|ccl|contado\s+con\s+liquidaci[oó]n?|mayorista"
+    r")\b",
+    re.IGNORECASE | re.UNICODE,
+)
+
+
+def _user_requested_fx_or_ars(message: str) -> bool:
+    """Devuelve True solo si el mensaje contiene señal explícita de ARS o tipo de cambio."""
+    return bool(_FX_SIGNAL_RE.search(message))
 
 
 def _build_data_summary(state: AgentState) -> str:
@@ -201,7 +220,8 @@ def _build_data_summary(state: AgentState) -> str:
     if state.get("errors"):
         parts.append("INTERNAL ERRORS: " + " | ".join(state["errors"]))
 
-    if state.get("exchange_rates"):
+    user_msg = state.get("user_message", "")
+    if state.get("exchange_rates") and _user_requested_fx_or_ars(user_msg):
         parts.append("TIPO DE CAMBIO USD/ARS (dolarapi.com):")
         rates = state["exchange_rates"] or []
         for rate in rates:

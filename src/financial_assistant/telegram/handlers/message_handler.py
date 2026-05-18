@@ -30,6 +30,9 @@ _TYPING_INTERVAL = 4.0  # Telegram typing action expires after 5s
 # escapar todo el texto, luego restaurar sólo estas etiquetas.
 _SAFE_HTML_TAG = re.compile(r"&lt;(/?)(b|i|u|s|code)&gt;")
 _MARKDOWN_BOLD = re.compile(r"\*\*([^*\n]+?)\*\*")
+# Asterisco simple en límite de no-palabra: *Auditar* → <b>Auditar</b>
+# No aplica entre caracteres alfanuméricos (ej: 5*180, a*b) ni dentro de **doble**.
+_MARKDOWN_SINGLE_BOLD = re.compile(r"(?<!\w)\*([^*\n]+?)\*(?!\w)")
 _GREETING_RE = re.compile(
     r"^\s*(?:hola|hi|inicio|buenas|hey|menú|menu|comenzar|start)\s*[!?.]*\s*$",
     re.IGNORECASE | re.UNICODE,
@@ -38,6 +41,7 @@ _GREETING_RE = re.compile(
 
 def _sanitize_for_html_mode(text: str) -> str:
     text = _MARKDOWN_BOLD.sub(r"<b>\1</b>", text)
+    text = _MARKDOWN_SINGLE_BOLD.sub(r"<b>\1</b>", text)
     escaped = html.escape(text)
     return _SAFE_HTML_TAG.sub(r"<\1\2>", escaped)
 
@@ -120,6 +124,21 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     if not message.bot:
         return
 
+    # Fast path: greetings → welcome + menu without invoking the graph
+    if _GREETING_RE.match(message.text or ""):
+        name = message.from_user.first_name if message.from_user else "inversor"
+        welcome = (
+            f"¡Hola, {name}! Soy tu asistente financiero personal.\n\n"
+            "Puedo ayudarte a:\n"
+            "• Analizar el rendimiento de tu cartera\n"
+            "• Optimizar tu portfolio\n"
+            "• Revisar sentimiento de noticias\n"
+            "• Gestionar tus posiciones\n\n"
+            "¿Qué querés hacer hoy?"
+        )
+        await _safe_answer(message, welcome, reply_markup=main_menu_keyboard())
+        return
+
     user_id = message.from_user.id if message.from_user else 0
 
     stop_typing = asyncio.Event()
@@ -160,5 +179,4 @@ async def on_message(message: Message, graph: Any) -> None:  # noqa: ANN401
     if len(response_text) > 4096:
         response_text = response_text[:4090] + "..."
 
-    reply_markup = main_menu_keyboard() if _GREETING_RE.match(message.text or "") else None
-    await _safe_answer(message, response_text, reply_markup=reply_markup)
+    await _safe_answer(message, response_text)
