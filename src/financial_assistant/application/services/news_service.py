@@ -35,35 +35,64 @@ class NewsService:
         self._sentiment = sentiment_analyzer
         self._repo = sentiment_repo
 
-    async def analyze_sentiment(self, query: NewsQuery) -> dict[str, list[DailySentiment]]:
-        """Return daily sentiment for the last 60 days.
-        Reads from DB when pre-computed data is available; falls back to live Finnhub."""
+    # Maximum number of recent headlines to surface per ticker
+    _MAX_HEADLINES = 5
+    # Days to look back when fetching fresh headlines for DB-cached tickers
+    _HEADLINE_LOOKBACK_DAYS = 7
+
+    async def analyze_sentiment(
+        self, query: NewsQuery
+    ) -> tuple[dict[str, list[DailySentiment]], dict[str, list[str]]]:
+        """Return (daily_sentiment, recent_headlines) for the last 60 days.
+        Sentiment for pre-computed tickers comes from DB; headlines always fetched live."""
         today = date.today()
         from_date = today - timedelta(days=60)
 
         if self._repo:
             cached = await self._repo.get_by_tickers(query.tickers, from_date, today)
-            # Use DB for tickers that have data; compute live only for those that don't
             missing = [t for t in query.tickers if not cached.get(t)]
+
+            # Tickers fully covered by DB — fetch headlines separately (no FinBERT)
+            cached_tickers = [t for t in query.tickers if cached.get(t)]
+            cached_headlines = await self._fetch_headlines(
+                cached_tickers, today - timedelta(days=self._HEADLINE_LOOKBACK_DAYS), today
+            )
+
             if not missing:
-                return cached
-            live = await self._analyze_range(missing, from_date, today)
-            return {**cached, **live}
+                return cached, cached_headlines
+
+            live_sentiment, live_headlines = await self._analyze_range(missing, from_date, today)
+            return {**cached, **live_sentiment}, {**cached_headlines, **live_headlines}
 
         return await self._analyze_range(query.tickers, from_date, today)
 
     async def analyze_historical_sentiment(
         self, query: HistoricalNewsQuery
     ) -> dict[str, list[DailySentiment]]:
-        """Same as analyze_sentiment but with an explicit lookback window."""
+        """Same as analyze_sentiment but with an explicit lookback window (no headlines)."""
         today = date.today()
         from_date = today - timedelta(days=query.lookback_days)
-        return await self._analyze_range(query.tickers, from_date, today)
+        sentiment, _ = await self._analyze_range(query.tickers, from_date, today)
+        return sentiment
+
+    async def _fetch_headlines(
+        self, tickers: list[str], from_date: date, to_date: date
+    ) -> dict[str, list[str]]:
+        """Fetch recent article titles without running sentiment analysis."""
+        result: dict[str, list[str]] = {}
+        for ticker in tickers:
+            articles = await self._gateway.fetch_articles_in_range(
+                ticker=ticker, from_date=from_date, to_date=to_date
+            )
+            sorted_articles = sorted(articles, key=lambda a: a.published_at, reverse=True)
+            result[ticker] = [a.title for a in sorted_articles[: self._MAX_HEADLINES] if a.title]
+        return result
 
     async def _analyze_range(
         self, tickers: list[str], from_date: date, to_date: date
-    ) -> dict[str, list[DailySentiment]]:
+    ) -> tuple[dict[str, list[DailySentiment]], dict[str, list[str]]]:
         result: dict[str, list[DailySentiment]] = {}
+        headlines: dict[str, list[str]] = {}
 
         for ticker in tickers:
             articles = await self._gateway.fetch_articles_in_range(
@@ -71,6 +100,12 @@ class NewsService:
                 from_date=from_date,
                 to_date=to_date,
             )
+
+            # Collect most recent headlines before grouping by day
+            sorted_articles = sorted(articles, key=lambda a: a.published_at, reverse=True)
+            headlines[ticker] = [
+                a.title for a in sorted_articles[: self._MAX_HEADLINES] if a.title
+            ]
 
             by_day: dict[date, list[NewsArticle]] = defaultdict(list)
             for article in articles:
@@ -92,4 +127,4 @@ class NewsService:
 
             result[ticker] = daily
 
-        return result
+        return result, headlines

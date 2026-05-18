@@ -140,9 +140,13 @@ def _build_data_summary(state: AgentState) -> str:
     elif "optimize" in intents:
         parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
-    if state.get("news_results"):
+    news_results = state.get("news_results") or {}
+    # Only consider news_results non-empty if at least one ticker has actual daily data
+    has_news_data = isinstance(news_results, dict) and any(daily for daily in news_results.values())
+    headlines_map: dict[str, list[str]] = state.get("news_headlines") or {}  # type: ignore[assignment]
+    if has_news_data:
         parts.append("NEWS SENTIMENT (últimos 60 días):")
-        for ticker, daily in (state["news_results"] or {}).items():
+        for ticker, daily in news_results.items():
             if not daily:
                 continue
             avg_score = sum(d.score for d in daily) / len(daily)
@@ -150,6 +154,10 @@ def _build_data_summary(state: AgentState) -> str:
             parts.append(f"  {ticker}: {dominant} (score prom: {avg_score:+.3f}, {len(daily)} días con noticias)")
             for day in daily[-3:]:
                 parts.append(f"    {day.date}: {day.label} {day.score:+.4f} ({day.article_count} art.)")
+            if headlines_map.get(ticker):
+                parts.append(f"  Titulares recientes ({ticker}):")
+                for h in headlines_map[ticker]:
+                    parts.append(f"    - {h}")
     elif "news" in intents:
         parts.append(
             "NEWS STATUS: No se obtuvieron noticias. "

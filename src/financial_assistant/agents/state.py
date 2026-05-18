@@ -65,6 +65,7 @@ class AgentState(TypedDict):
     audit_report: AuditReport | None
     quant_result: QuantResult | None
     news_results: dict[str, list[DailySentiment]] | None
+    news_headlines: dict[str, list[str]] | None  # recent article titles per ticker (live fetch only)
     exchange_rates: list[ExchangeRate] | None
 
     # ---- Final ----

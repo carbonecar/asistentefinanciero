@@ -12,14 +12,15 @@ def make_news_scout_node(news_service: NewsService, portfolio_service: Portfolio
     async def news_scout_node(state: AgentState) -> dict:  # type: ignore[type-arg]
         tickers = state.get("active_tickers") or []
         user_id: int = state.get("user_id", 0)
+        intents = state.get("intents") or []
 
-        # Cuando optimize+use_sentiment=True el usuario no menciona tickers explícitos;
-        # se usan los tickers del portfolio como fuente para el análisis de sentimiento.
-        if not tickers and state.get("use_sentiment") and "optimize" in (state.get("intents") or []):
+        # Si no se extrajeron tickers explícitos, usar los del portfolio como fallback.
+        # Aplica tanto para optimize+sentiment como para intent "news" puro.
+        if not tickers and ("news" in intents or (state.get("use_sentiment") and "optimize" in intents)):
             try:
                 portfolio = await portfolio_service.get_or_create(user_id)
                 tickers = list(portfolio.tickers())
-                logger.info("NewsScout: using portfolio tickers for sentiment: %s", tickers)
+                logger.info("NewsScout: using portfolio tickers as fallback: %s", tickers)
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.error("NewsScout: failed to load portfolio tickers: %s", exc)
 
@@ -38,10 +39,10 @@ def make_news_scout_node(news_service: NewsService, portfolio_service: Portfolio
 
         try:
             query = NewsQuery(tickers=tickers)
-            results = await news_service.analyze_sentiment(query)
-            return {"news_results": results, "errors": []}
+            results, headlines = await news_service.analyze_sentiment(query)
+            return {"news_results": results, "news_headlines": headlines, "errors": []}
         except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("NewsScout failed: %s", exc)
-            return {"news_results": [], "errors": [str(exc)]}
+            return {"news_results": {}, "news_headlines": {}, "errors": [str(exc)]}
 
     return news_scout_node
