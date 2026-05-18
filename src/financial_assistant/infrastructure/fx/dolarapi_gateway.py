@@ -19,7 +19,10 @@ from financial_assistant.domain.ports.fx_gateway import IExchangeRateGateway
 logger = logging.getLogger(__name__)
 
 _DOLARAPI_URL = "https://dolarapi.com/v1/dolares"
-_CASAS_INTERES = {"oficial", "blue", "mep", "mayorista"}
+# dolarapi.com returns MEP as casa="bolsa" (Dólar Bolsa / MEP). Include it and normalise below.
+_CASAS_INTERES = {"oficial", "blue", "mep", "bolsa", "mayorista"}
+_CASA_NORMALISE = {"bolsa": "mep"}  # API name → canonical name
+_NOMBRE_NORMALISE = {"bolsa": "Dólar MEP"}
 _CACHE_TTL = timedelta(minutes=5)
 
 
@@ -57,9 +60,12 @@ class DolarApiGateway(IExchangeRateGateway):
         except (ValueError, AttributeError):
             updated_at = datetime.now()
 
+        raw_casa = item["casa"]
+        casa = _CASA_NORMALISE.get(raw_casa, raw_casa)
+        nombre = _NOMBRE_NORMALISE.get(raw_casa) or item.get("nombre", raw_casa.capitalize())
         return ExchangeRate(
-            casa=item["casa"],
-            nombre=item.get("nombre", item["casa"].capitalize()),
+            casa=casa,
+            nombre=nombre,
             compra=Decimal(str(item.get("compra") or 0)),
             venta=Decimal(str(item.get("venta") or 0)),
             updated_at=updated_at,

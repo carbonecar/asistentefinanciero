@@ -113,22 +113,26 @@ def make_data_fetcher_node(
 
         if not raw_tickers:
             logger.warning("[DataFetcher] user=%s — no tickers in state, skipping", user_id)
-            return {"market_data_result": {}, "errors": []}
+            return {"market_data_result": {}, "positions": [], "errors": []}
 
         tickers, rejected = _normalize_tickers(raw_tickers)
 
         if not tickers:
             return {
                 "market_data_result": {},
+                "positions": [],
                 "errors": [f"Los tickers no son válidos: {raw_tickers}"],
             }
 
         # Persistir posiciones extraídas por el supervisor LLM
+        confirmed_positions: list[dict[str, Any]] = []
+        position_errors: list[str] = []
+
         for pos in positions:
             ticker = str(pos.get("ticker", "")).upper()
             quantity = float(pos.get("quantity") or 0)
             avg_cost_usd = float(pos.get("avg_cost_usd") or 0)
-            asset_type_raw = str(pos.get("asset_type") or "stock")
+            asset_type_raw = str(pos.get("asset_type") or "stock").lower()
             action = str(pos.get("action") or "buy").lower()
 
             if not ticker or quantity <= 0:
@@ -136,6 +140,10 @@ def make_data_fetcher_node(
                 continue
 
             if action == "sell":
+                logger.info(
+                    "REGISTER_POSITION user_id=%s action=sell ticker=%s quantity=%s",
+                    user_id, ticker, quantity,
+                )
                 try:
                     portfolio = await portfolio_service.get_or_create(user_id)
                     existing = portfolio.get_position(ticker)
@@ -147,9 +155,10 @@ def make_data_fetcher_node(
                     elif Decimal(str(quantity)) >= existing.quantity:
                         await portfolio_service.remove_position(user_id, ticker)
                         logger.info(
-                            "[DataFetcher] user=%s — full exit: removed %s @ sale_ref $%s",
-                            user_id, ticker, avg_cost_usd,
+                            "REGISTER_POSITION saved action=sell type=full ticker=%s user_id=%s",
+                            ticker, user_id,
                         )
+                        confirmed_positions.append(pos)
                     else:
                         new_qty = existing.quantity - Decimal(str(quantity))
                         reduce_cmd = AddPositionCommand(
@@ -161,30 +170,43 @@ def make_data_fetcher_node(
                         )
                         await portfolio_service.add_position(reduce_cmd)
                         logger.info(
-                            "[DataFetcher] user=%s — partial exit: %s reduced to %s units @ cost $%s",
-                            user_id, ticker, new_qty, existing.avg_cost_usd,
+                            "REGISTER_POSITION saved action=sell type=partial ticker=%s user_id=%s",
+                            ticker, user_id,
                         )
+                        confirmed_positions.append(pos)
                 except Exception as exc:  # pylint: disable=broad-exception-caught
                     logger.error("[DataFetcher] user=%s — failed to process sell for %s: %s", user_id, ticker, exc)
+                    position_errors.append(f"Error al procesar venta de {ticker}: {exc}")
             else:
                 if avg_cost_usd <= 0:
                     logger.warning("[DataFetcher] user=%s — skipping buy without price: %s", user_id, pos)
                     continue
+                logger.info(
+                    "REGISTER_POSITION user_id=%s action=buy ticker=%s quantity=%s avg_cost_usd=%s",
+                    user_id, ticker, quantity, avg_cost_usd,
+                )
                 try:
+                    try:
+                        asset_type = AssetType(asset_type_raw)
+                    except ValueError:
+                        logger.warning(
+                            "[DataFetcher] user=%s — unknown asset_type %r for %s, defaulting to stock",
+                            user_id, asset_type_raw, ticker,
+                        )
+                        asset_type = AssetType.STOCK
                     add_cmd = AddPositionCommand(
                         user_id=user_id,
                         ticker=ticker,
-                        asset_type=AssetType(asset_type_raw),
+                        asset_type=asset_type,
                         quantity=Decimal(str(quantity)),
                         avg_cost_usd=Decimal(str(avg_cost_usd)),
                     )
                     await portfolio_service.add_position(add_cmd)
-                    logger.info(
-                        "[DataFetcher] user=%s — position saved: %s x%s @ $%s",
-                        user_id, ticker, quantity, avg_cost_usd,
-                    )
+                    logger.info("REGISTER_POSITION saved action=buy ticker=%s user_id=%s", ticker, user_id)
+                    confirmed_positions.append(pos)
                 except Exception as exc:  # pylint: disable=broad-exception-caught
                     logger.error("[DataFetcher] user=%s — failed to save position %s: %s", user_id, ticker, exc)
+                    position_errors.append(f"Error al registrar {ticker}: {exc}")
 
         # Descargar y persistir datos de mercado
         try:
@@ -199,7 +221,8 @@ def make_data_fetcher_node(
             )
             return {
                 "market_data_result": {},
-                "errors": [f"Error al obtener datos de mercado: {exc}"],
+                "positions": confirmed_positions,
+                "errors": position_errors + [f"Error al obtener datos de mercado: {exc}"],
             }
 
         result: dict[str, object] = {}
@@ -238,6 +261,11 @@ def make_data_fetcher_node(
             rejected_note = f" Tickers con formato inválido ignorados: {rejected}."
             error_msg = (error_msg + rejected_note) if error_msg else rejected_note
 
-        return {"market_data_result": result, "errors": [error_msg] if error_msg else []}
+        all_errors = position_errors + ([error_msg] if error_msg else [])
+        return {
+            "market_data_result": result,
+            "positions": confirmed_positions,
+            "errors": all_errors,
+        }
 
     return data_fetcher_node

@@ -22,6 +22,7 @@ class PortfolioORM(Base):
 
 class PositionORM(Base):
     __tablename__ = "positions"
+    __table_args__ = (UniqueConstraint("portfolio_id", "ticker", name="uq_position_portfolio_ticker"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     portfolio_id: Mapped[int] = mapped_column(

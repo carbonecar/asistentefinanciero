@@ -18,6 +18,8 @@ def make_auditor_node(audit_service: AuditService):  # type: ignore[no-untyped-d
             report = await audit_service.audit(query)
 
             risk_warnings = []
+            positions_count = len(report.positions) if report and report.positions else 0
+            logger.info("AUDIT_PORTFOLIO user_id=%s positions_count=%d", user_id, positions_count)
             if report and report.positions:
                 total_value = sum(float(p["current_value"]) for p in report.positions)
                 if total_value > 0:
