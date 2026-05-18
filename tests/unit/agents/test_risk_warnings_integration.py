@@ -20,7 +20,6 @@ import pytest
 
 from financial_assistant.agents.ux_agent.agent import _build_data_summary
 from financial_assistant.domain.models.risk import RiskWarning, WarningLevel
-from financial_assistant.domain.services.risk_rules import check_direct_order
 
 # ---------------------------------------------------------------------------
 # Estado mínimo válido para _build_data_summary

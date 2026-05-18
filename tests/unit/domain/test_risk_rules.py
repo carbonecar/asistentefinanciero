@@ -1,6 +1,6 @@
 import pytest
 
-from financial_assistant.domain.models.profile import FinancialGoal, FinancialProfile, RiskTolerance
+from financial_assistant.domain.models.profile import FinancialProfile, RiskTolerance
 from financial_assistant.domain.models.risk import WarningLevel
 from financial_assistant.domain.services.risk_rules import (
     CONCENTRATION_CRITICAL_THRESHOLD,
@@ -13,7 +13,6 @@ from financial_assistant.domain.services.risk_rules import (
     check_missing_profile,
     check_short_horizon,
 )
-
 
 # ---------------------------------------------------------------------------
 # check_concentration

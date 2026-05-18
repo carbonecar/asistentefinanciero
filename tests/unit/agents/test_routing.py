@@ -148,6 +148,56 @@ class TestRouteByIntent:
         assert Node.QUANT not in result
         assert result == [Node.NEWS_SCOUT]
 
+    # --- optimize + use_sentiment=True: routes to news_scout FIRST (no news yet) ---
+
+    def test_optimize_with_sentiment_routes_to_news_scout(self):
+        result = route_by_intent(_state(["optimize"], use_sentiment=True))
+        assert result == [Node.NEWS_SCOUT]
+
+    def test_optimize_with_sentiment_does_not_route_to_quant_directly(self):
+        result = route_by_intent(_state(["optimize"], use_sentiment=True))
+        assert Node.QUANT not in result
+
+    def test_optimize_with_sentiment_false_routes_to_quant(self):
+        result = route_by_intent(_state(["optimize"], use_sentiment=False))
+        assert result == [Node.QUANT]
+
+    def test_optimize_and_audit_with_sentiment_routes_to_news_scout_and_auditor(self):
+        result = route_by_intent(_state(["optimize", "audit"], use_sentiment=True))
+        assert set(result) == {Node.NEWS_SCOUT, Node.AUDITOR}
+
+    def test_news_blocking_overrides_sentiment_routing(self):
+        # When "news" is blocking, the sentiment-redirect of optimize doesn't apply.
+        # Only the blocker (news_scout) is dispatched in this round.
+        result = route_by_intent(_state(["news", "optimize"], use_sentiment=True))
+        assert result == [Node.NEWS_SCOUT]
+        assert Node.QUANT not in result
+
+    def test_all_route_by_intent_destinations_are_valid_graph_nodes(self):
+        valid_nodes = {
+            Node.DATA_FETCHER, Node.AUDITOR, Node.QUANT,
+            Node.NEWS_SCOUT, Node.FX_FETCHER, Node.UNSUPPORTED,
+        }
+        test_cases = [
+            (["audit"], False),
+            (["optimize"], False),
+            (["optimize"], True),
+            (["news"], False),
+            (["data_fetch"], False),
+            (["general"], False),
+            (["unsupported"], False),
+            (["audit", "optimize"], False),
+            (["news", "optimize"], False),
+            (["news", "optimize"], True),
+            (["data_fetch", "audit"], False),
+            (["optimize", "audit"], True),
+        ]
+        for intents, use_sentiment in test_cases:
+            destinations = route_by_intent(_state(intents, use_sentiment=use_sentiment))
+            for dest in destinations:
+                label = f"{intents} use_sentiment={use_sentiment}"
+                assert dest in valid_nodes, f"Node '{dest}' not in graph map for {label}"
+
 
 # ---------------------------------------------------------------------------
 # post_fetch_route
@@ -211,6 +261,24 @@ class TestPostFetchRoute:
         result = post_fetch_route(_state(["news", "data_fetch", "optimize"]))
         assert Node.NEWS_SCOUT not in result
         assert Node.DATA_FETCHER not in result
+
+    # --- optimize + use_sentiment=True: after news_scout, post_fetch routes to QUANT ---
+    # post_fetch uses _resolve (not _resolve_destination), so no sentiment re-routing.
+
+    def test_optimize_with_sentiment_post_fetch_routes_to_quant(self):
+        result = post_fetch_route(_state(["optimize"], use_sentiment=True))
+        assert result == [Node.QUANT]
+
+    def test_optimize_with_sentiment_post_fetch_does_not_loop_to_news_scout(self):
+        result = post_fetch_route(_state(["optimize"], use_sentiment=True))
+        assert Node.NEWS_SCOUT not in result
+
+    def test_news_optimize_with_sentiment_post_fetch_routes_to_quant(self):
+        # After news_scout ran for ["news", "optimize"] with use_sentiment=True,
+        # post_fetch should send remaining "optimize" → QUANT (not back to NEWS_SCOUT).
+        result = post_fetch_route(_state(["news", "optimize"], use_sentiment=True))
+        assert result == [Node.QUANT]
+        assert Node.NEWS_SCOUT not in result
 
 
 # ---------------------------------------------------------------------------
