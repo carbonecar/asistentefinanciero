@@ -21,6 +21,9 @@ from financial_assistant.infrastructure.db.repositories.market_data_repository i
 from financial_assistant.infrastructure.db.repositories.portfolio_repository import (
     PostgresPortfolioRepository,
 )
+from financial_assistant.infrastructure.db.repositories.sentiment_history_repository import (
+    PostgresSentimentHistoryRepository,
+)
 from financial_assistant.infrastructure.fx.dolarapi_gateway import DolarApiGateway
 from financial_assistant.infrastructure.market.yfinance_gateway import YFinanceGateway
 from financial_assistant.infrastructure.news.finnhub_news_gateway import FinnhubNewsGateway
@@ -70,6 +73,7 @@ class Container:
         # Repositorios
         portfolio_repo = PostgresPortfolioRepository(session_factory)
         market_data_repo = PostgresMarketDataRepository(session_factory)
+        sentiment_history_repo = PostgresSentimentHistoryRepository(session_factory)
 
         # Gateways externos
         market_gateway = YFinanceGateway()
@@ -107,7 +111,7 @@ class Container:
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
 
         quant_service = QuantService(portfolio_repo, market_gateway, _OptimizerAdapter(), _SimulatorAdapter())
-        news_service = NewsService(news_gateway, FinBERTSentimentAnalyzer())
+        news_service = NewsService(news_gateway, FinBERTSentimentAnalyzer(), sentiment_history_repo)
         fx_gateway = DolarApiGateway()
 
         # Grafo LangGraph compilado

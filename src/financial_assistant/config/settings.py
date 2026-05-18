@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     # Finnhub (historical news)
     finnhub_api_key: str = ""
 
+    # Tickers to pre-compute sentiment history (comma-separated, e.g. "AAPL,TSLA,GGAL.BA")
+    analysis_tickers: str = ""
+
+    @property
+    def analysis_tickers_list(self) -> list[str]:
+        return [t.strip().upper() for t in self.analysis_tickers.split(",") if t.strip()]
+
     # DB
     sql_echo: bool = False  # set SQL_ECHO=true to log all SQL statements
 

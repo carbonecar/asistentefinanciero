@@ -5,6 +5,7 @@ from typing import Protocol
 from financial_assistant.application.dtos.requests import HistoricalNewsQuery, NewsQuery
 from financial_assistant.domain.models.news import DailySentiment, NewsArticle
 from financial_assistant.domain.ports.historical_news_gateway import IHistoricalNewsGateway
+from financial_assistant.domain.ports.sentiment_history_repository import ISentimentHistoryRepository
 
 
 class SentimentAnalyzerProtocol(Protocol):
@@ -28,15 +29,27 @@ class NewsService:
         self,
         gateway: IHistoricalNewsGateway,
         sentiment_analyzer: SentimentAnalyzerProtocol,
+        sentiment_repo: ISentimentHistoryRepository | None = None,
     ) -> None:
         self._gateway = gateway
         self._sentiment = sentiment_analyzer
+        self._repo = sentiment_repo
 
     async def analyze_sentiment(self, query: NewsQuery) -> dict[str, list[DailySentiment]]:
-        """Fetch news for the last 60 days and return a daily sentiment
-        time-series for each ticker. Days with no articles are omitted."""
+        """Return daily sentiment for the last 60 days.
+        Reads from DB when pre-computed data is available; falls back to live Finnhub."""
         today = date.today()
         from_date = today - timedelta(days=60)
+
+        if self._repo:
+            cached = await self._repo.get_by_tickers(query.tickers, from_date, today)
+            # Use DB for tickers that have data; compute live only for those that don't
+            missing = [t for t in query.tickers if not cached.get(t)]
+            if not missing:
+                return cached
+            live = await self._analyze_range(missing, from_date, today)
+            return {**cached, **live}
+
         return await self._analyze_range(query.tickers, from_date, today)
 
     async def analyze_historical_sentiment(
