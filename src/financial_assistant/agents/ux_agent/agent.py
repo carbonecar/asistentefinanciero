@@ -163,10 +163,10 @@ def _build_data_summary(state: AgentState) -> str:
     elif "optimize" in intents:
         parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
-    if state.get("news_results"):
+    news_results = state.get("news_results")
+    if news_results:
         parts.append("NEWS SENTIMENT:")
-        results = state["news_results"] or []
-        for result in results:
+        for result in news_results:
             parts.append(
                 f"  {result.ticker}: {result.label} (score: {result.score:+.3f}, {result.article_count} articles)"
             )
@@ -182,10 +182,15 @@ def _build_data_summary(state: AgentState) -> str:
                 )
             for headline in result.representative_headlines:
                 parts.append(f"    - {headline}")
+    elif news_results is not None and "news" in intents:
+        parts.append(
+            "NEWS STATUS: No se encontraron artículos para los tickers solicitados. "
+            "Verificá que el ticker sea correcto o intentá con otro símbolo."
+        )
     elif "news" in intents:
         parts.append(
-            "NEWS STATUS: No se obtuvieron noticias. "
-            "Posibles causas: NEWSAPI_KEY no configurada, o no se detectaron tickers en el mensaje."
+            "NEWS STATUS: No se pudo obtener noticias. "
+            "Indicá el ticker específico (ej: AAPL, GGAL.BA)."
         )
 
     if state.get("market_data_result"):

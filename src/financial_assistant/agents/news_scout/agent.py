@@ -13,15 +13,24 @@ def make_news_scout_node(news_service: NewsService, portfolio_service: Portfolio
         tickers = state.get("active_tickers") or []
         user_id: int = state.get("user_id", 0)
 
-        # Cuando optimize+use_sentiment=True el usuario no menciona tickers explícitos;
-        # se usan los tickers del portfolio como fuente para el análisis de sentimiento.
-        if not tickers and state.get("use_sentiment") and "optimize" in (state.get("intents") or []):
-            try:
-                portfolio = await portfolio_service.get_or_create(user_id)
-                tickers = list(portfolio.tickers())
-                logger.info("NewsScout: using portfolio tickers for sentiment: %s", tickers)
-            except Exception as exc:  # pylint: disable=broad-exception-caught
-                logger.error("NewsScout: failed to load portfolio tickers: %s", exc)
+        # Cuando no hay tickers explícitos, usar los del portfolio como fallback.
+        # Aplica tanto a optimize+use_sentiment (sentimiento para rebalanceo) como a
+        # news genérico (botón "Noticias" sin ticker específico).
+        if not tickers:
+            intents = state.get("intents") or []
+            if state.get("use_sentiment") and "optimize" in intents:
+                reason = "sentiment-adjust for optimize"
+            elif "news" in intents:
+                reason = "news intent without explicit tickers"
+            else:
+                reason = None
+            if reason:
+                try:
+                    portfolio = await portfolio_service.get_or_create(user_id)
+                    tickers = list(portfolio.tickers())
+                    logger.info("NewsScout: using portfolio tickers (%s): %s", reason, tickers)
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("NewsScout: failed to load portfolio tickers: %s", exc)
 
         if not tickers:
             logger.warning(

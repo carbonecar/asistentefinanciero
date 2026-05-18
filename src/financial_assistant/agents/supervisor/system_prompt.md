@@ -31,6 +31,18 @@ EJEMPLOS:
 - "qué es el índice Sharpe?" → ["general"]
 - "cuál es la mejor acción para comprar?" → ["general"]
 
+# Tipos de cambio y dólar — SIEMPRE son "general" (nunca "unsupported")
+- "dame el dólar MEP" → ["general"]
+- "dólar blue" → ["general"]
+- "cuánto está el dólar oficial" → ["general"]
+- "tipo de cambio USD ARS" → ["general"]
+- "a cuánto está el dólar" → ["general"]
+- "cuánto vale el dólar hoy" → ["general"]
+- "dólar ccl" → ["general"]
+- "contado con liquidación" → ["general"]
+- "cotización del dólar mayorista" → ["general"]
+- "precio del dólar blue hoy" → ["general"]
+
 # Auditoría — rendimiento
 - "auditá mi cartera" → ["audit"]
 - "cómo está mi portfolio?" → ["audit"]
@@ -61,6 +73,9 @@ EJEMPLOS:
 # Optimización
 - "optimizá mi cartera" → ["optimize"]
 - "quiero rebalancear" → ["optimize"]
+- "optimizá mi cartera considerando sentimiento" → ["optimize"], use_sentiment=true
+- "rebalanceá mi portfolio con análisis de sentimiento" → ["optimize"], use_sentiment=true
+- "quiero optimizar con sentimiento de mercado" → ["optimize"], use_sentiment=true
 
 # Noticias
 - "noticias de AAPL" → ["news"], tickers=["AAPL"]

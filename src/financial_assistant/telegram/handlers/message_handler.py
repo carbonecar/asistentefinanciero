@@ -20,8 +20,8 @@ message_router = Router(name="messages")
 INTENT_MESSAGES = {
     "audit": "Auditá mi cartera",
     "optimize": "Optimizá mi portfolio",
-    "news": "Mostrame las últimas noticias",
-    "add_position": "Quiero agregar una posición",
+    "news": "Noticias de mi portfolio",
+    "data_fetch": "Quiero registrar una posición",
 }
 
 _TYPING_INTERVAL = 4.0  # Telegram typing action expires after 5s
@@ -77,6 +77,7 @@ async def on_intent_callback(callback: CallbackQuery, graph: Any) -> None:  # no
     user_id = callback.from_user.id if callback.from_user else 0
     intent = callback.data.split(":")[1]
     user_message = INTENT_MESSAGES.get(intent, intent)
+    logger.info("[Callback] user=%s intent=%s message=%r", user_id, intent, user_message)
 
     stop_typing = asyncio.Event()
     typing_task = asyncio.create_task(_keep_typing(callback.bot, callback.message.chat.id, stop_typing))

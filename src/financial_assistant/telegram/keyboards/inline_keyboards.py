@@ -10,7 +10,7 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(text="📰 Noticias", callback_data="intent:news"),
-                InlineKeyboardButton(text="➕ Agregar posición", callback_data="intent:add_position"),
+                InlineKeyboardButton(text="➕ Agregar posición", callback_data="intent:data_fetch"),
             ],
         ]
     )

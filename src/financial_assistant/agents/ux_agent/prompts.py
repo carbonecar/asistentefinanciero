@@ -115,6 +115,7 @@ Si ya hubo intercambio previo, no repitas la presentación.
 Casos específicos que requieren atención:
 - Si hay errores técnicos ("INTERNAL ERROR:"), informá al usuario y sugerile reintentar.
 - Si el portfolio está vacío, indicale que debe agregar posiciones primero.
-- Si las noticias no están disponibles, informá que requiere NEWSAPI_KEY válida.
+- Si las noticias no están disponibles, indicá que no se encontraron artículos
+  para los tickers solicitados y sugerí verificar el símbolo.
 - Para tipos de cambio, NUNCA uses valores de tu conocimiento previo.
 """

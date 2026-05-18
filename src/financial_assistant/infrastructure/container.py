@@ -23,6 +23,7 @@ from financial_assistant.infrastructure.db.repositories.portfolio_repository imp
 )
 from financial_assistant.infrastructure.fx.dolarapi_gateway import DolarApiGateway
 from financial_assistant.infrastructure.market.yfinance_gateway import YFinanceGateway
+from financial_assistant.infrastructure.news.newsapi_gateway import NewsAPIGateway
 from financial_assistant.infrastructure.news.yfinance_news_gateway import YFinanceNewsGateway
 from financial_assistant.infrastructure.nlp.finbert_sentiment_analyzer import FinBERTSentimentAnalyzer
 
@@ -73,7 +74,11 @@ class Container:
 
         # Gateways externos
         market_gateway = YFinanceGateway()
-        news_gateway = YFinanceNewsGateway()
+        news_gateway = (
+            NewsAPIGateway(settings.newsapi_key)
+            if settings.newsapi_key
+            else YFinanceNewsGateway()
+        )
 
         # Servicios de aplicación
         self.portfolio_service = PortfolioService(portfolio_repo)
