@@ -126,18 +126,6 @@ def route_by_intent(state: AgentState) -> list[str]:
     return destinations
 
 
-def route_after_news_scout(state: AgentState) -> str:
-    """
-    Routing desde sentiment_router: si optimize está en los intents y
-    use_sentiment=True, deriva a quant (que ya puede leer news_results).
-    Caso contrario, va directo a fx_fetcher.
-    """
-    intents = state.get("intents") or []
-    if "optimize" in intents and state.get("use_sentiment", False):
-        return Node.QUANT
-    return Node.FX_FETCHER
-
-
 def post_fetch_route(state: AgentState) -> list[str]:
     """
     Función de routing condicional ejecutada luego del data_fetcher.

@@ -8,6 +8,8 @@ from typing_extensions import TypedDict
 from financial_assistant.domain.models.analysis import AuditReport, QuantResult
 from financial_assistant.domain.models.fx import ExchangeRate
 from financial_assistant.domain.models.news import SentimentResult
+from financial_assistant.domain.models.profile import FinancialProfile
+from financial_assistant.domain.models.risk import ExplanationCard, RiskWarning
 
 Intent = Literal["audit", "optimize", "news", "data_fetch", "general", "unsupported"]
 FALLBACK_INTENT: list[Intent] = ["unsupported"]
@@ -67,6 +69,11 @@ class AgentState(TypedDict):
     quant_result: QuantResult | None
     news_results: list[SentimentResult] | None
     exchange_rates: list[ExchangeRate] | None
+
+    # ---- Risk & Explainability ----
+    financial_profile: FinancialProfile | None
+    risk_warnings: Annotated[list[RiskWarning], operator.add]
+    explanation_card: ExplanationCard | None
 
     # ---- Final ----
     final_response: str | None

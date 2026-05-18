@@ -6,6 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from financial_assistant.agents.llm_factory import make_llm
 from financial_assistant.agents.state import AgentState
 from financial_assistant.agents.ux_agent.prompts import SYNTHESIS_SYSTEM_PROMPT, SYNTHESIS_USER_TEMPLATE
+from financial_assistant.domain.services.risk_rules import check_direct_order
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +236,29 @@ def _build_data_summary(state: AgentState) -> str:
                     f"  {p.get('ticker','?')}: salida de {qty:.0f} unidades{price_str}"
                     f" ({p.get('asset_type','stock')})"
                 )
+
+    # Direct-order check runs unconditionally for every intent, not only when quant/auditor ran.
+    # This prevents the LLM from being the sole barrier against order-execution language.
+    user_msg_for_check = state.get("user_message", "")
+    all_warnings = list(state.get("risk_warnings") or []) + check_direct_order(user_msg_for_check)
+
+    if all_warnings:
+        parts.append("ADVERTENCIAS DE RIESGO:")
+        for w in all_warnings:
+            parts.append(f"  [{w.level.upper()}] ({w.code}) {w.message}")
+
+    if state.get("explanation_card"):
+        card = state["explanation_card"]
+        parts.append("EXPLICACIÓN DEL MODELO:")
+        parts.append(f"  Método: {card.method}")
+        parts.append(f"  Datos: {card.data_period}")
+        parts.append(f"  Tasa libre de riesgo: {card.risk_free_rate:.0%}")
+        if card.sentiment_lambda is not None:
+            parts.append(f"  Ajuste sentimiento (lambda): {card.sentiment_lambda}")
+        parts.append(f"  Supuestos: {' | '.join(card.assumptions)}")
+        parts.append(f"  Límites del modelo: {' | '.join(card.limitations)}")
+        parts.append(f"  Incertidumbre: {card.uncertainty_note}")
+        parts.append(f"  Fuentes: {', '.join(card.sources)}")
 
     if state.get("errors"):
         parts.append("INTERNAL ERRORS: " + " | ".join(state["errors"]))

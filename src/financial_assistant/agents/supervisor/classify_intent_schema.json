@@ -26,7 +26,7 @@
       "use_sentiment": {
         "type": "boolean",
         "description": "Si el usuario quiere optimización ajustada por sentimiento",
-        "default": true
+        "default": false
       },
       "positions": {
         "type": "array",

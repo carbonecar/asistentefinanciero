@@ -66,14 +66,18 @@ class AuditService:
             market_data[ticker] = records
 
         sp500 = await self._market_gateway.fetch_benchmark("^GSPC")
+        merval = await self._market_gateway.fetch_benchmark("^MERV")
 
         latest_prices = {ticker: records[-1].close for ticker, records in market_data.items() if records}
         portfolio_return = compute_portfolio_return(portfolio, latest_prices)
         sp500_return = compute_ohlcv_return(sp500)
 
-        comparisons = [
+        comparisons: list[BenchmarkComparison] = [
             BenchmarkComparison("S&P 500", sp500_return, portfolio_return),
         ]
+        if merval:
+            merval_return = compute_ohlcv_return(merval)
+            comparisons.append(BenchmarkComparison("Merval", merval_return, portfolio_return))
 
         returns_by_ticker = {
             ticker: compute_ohlcv_return(records) for ticker, records in market_data.items() if records

@@ -47,7 +47,13 @@ def mock_portfolio_repo(portfolio):
 def mock_market_gateway():
     gw = AsyncMock()
     gw.fetch_ohlcv.return_value = make_records("AAPL", 100, 130)
-    gw.fetch_benchmark.return_value = make_records("^GSPC", 4000, 4400)
+
+    def _fetch_benchmark(symbol: str) -> list[OHLCV]:
+        if symbol == "^MERV":
+            return make_records("^MERV", 800_000, 950_000)
+        return make_records("^GSPC", 4000, 4400)
+
+    gw.fetch_benchmark.side_effect = _fetch_benchmark
     return gw
 
 
@@ -59,7 +65,10 @@ async def test_audit_returns_report(mock_portfolio_repo, mock_market_gateway):
     assert report is not None
     assert report.user_id == 42
     assert report.portfolio_return > Decimal("0")
-    assert len(report.comparisons) == 1
+    assert len(report.comparisons) == 2
+    benchmark_names = [c.benchmark_name for c in report.comparisons]
+    assert "S&P 500" in benchmark_names
+    assert "Merval" in benchmark_names
 
 
 @pytest.mark.asyncio
