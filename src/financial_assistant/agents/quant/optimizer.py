@@ -15,7 +15,6 @@ class PortfolioOptimizer:
         ohlcv_by_ticker: dict[str, list[OHLCV]],
         sentiment_map: dict[str, float] | None = None,
     ) -> OptimizedWeights | None:
-
         prices_df = self._build_prices_df(ohlcv_by_ticker)
         if prices_df.empty or len(prices_df.columns) < 2:
             return None
@@ -37,6 +36,7 @@ class PortfolioOptimizer:
                 expected_annual_return=round(float(perf[0]), 4),
                 annual_volatility=round(float(perf[1]), 4),
                 sharpe_ratio=round(float(perf[2]), 4),
+                expected_returns_per_ticker={t: round(float(mu[t]), 4) for t in mu.index},
             )
         except Exception:  # pylint: disable=broad-exception-caught
             return None

@@ -117,17 +117,36 @@ def _build_data_summary(state: AgentState) -> str:
         if qr is not None:
             if qr.optimized_weights:
                 w = qr.optimized_weights
-                parts.append("OPTIMIZED PORTFOLIO:")
-                for ticker, weight in w.weights.items():
-                    if weight > 0.001:
-                        parts.append(f"  {ticker}: {weight:.1%}")
+                sentiment_note = " (ajustado por sentimiento)" if qr.sentiment_adjusted else ""
+                parts.append(f"OPTIMIZED PORTFOLIO{sentiment_note}:")
                 parts.append(f"  Expected return: {w.expected_annual_return:.2%}")
                 parts.append(f"  Volatility: {w.annual_volatility:.2%}")
                 parts.append(f"  Sharpe ratio: {w.sharpe_ratio:.2f}")
+                for ticker, weight in w.weights.items():
+                    if weight > 0.001:
+                        parts.append(f"  {ticker}: {weight:.1%}")
+
+                if w.expected_returns_per_ticker:
+                    parts.append("  RENDIMIENTOS ESPERADOS ANUALES POR TICKER:")
+                    for ticker, ret in sorted(w.expected_returns_per_ticker.items(), key=lambda x: -x[1]):
+                        parts.append(f"    {ticker}: {ret:.2%}")
+
                 if qr.sentiment_adjusted:
                     parts.append(
                         "  Sentiment adjustment: los retornos esperados fueron"
                         " modificados por el sentimiento de las noticias disponibles."
+                    )
+
+            if qr.rebalancing_trades:
+                total_val = sum(abs(t.trade_value_usd) for t in qr.rebalancing_trades) / 2
+                parts.append(f"PROPUESTA DE REBALANCEO (valor total cartera: ${total_val:,.0f}):")
+                for trade in qr.rebalancing_trades:
+                    if abs(trade.delta_weight) < 0.001:
+                        continue
+                    action = "COMPRAR" if trade.trade_value_usd > 0 else "VENDER"
+                    parts.append(
+                        f"  {trade.ticker}: {trade.current_weight:.1%} → {trade.target_weight:.1%} "
+                        f"| {action} ${abs(trade.trade_value_usd):,.0f} ({trade.delta_weight:+.1%})"
                     )
             if qr.simulation and qr.simulation.percentile_50:
                 sim = qr.simulation

@@ -6,29 +6,31 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage{graphicx}
+%\usepackage{hyperref}
+%\usepackage{bookmark}
 % Título del Trabajo Práctico
-\title{Sistema Multi-Agente para la Gestión y Optimización de Carteras de Inversión en Renta Fija y Variable}
+\title{Sistema Multi-Agente para la Gestión y Optimización de Carteras de Inversión en Renta Variable}
 
 \author[1]{José Carlos Carbone}
-\author[1]{MARCO SEBASTIAN PADILLA}
+\author[1]{Marco Sebastián Padilla}
 \author[1]{Nilayvi Stephani Barrientos Pérez}
 \author[1]{Federico Hernan Sanches}
 \affil[1]{Maestría en Inteligencia Artificial}
 
 \date{Marzo 2026}
 
+
+
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-Este trabajo presenta el diseño e implementación de un asistente financiero inteligente basado en una arquitectura de micro-agentes coordinados. El sistema integra datos en tiempo real de activos de renta variable (Acciones) y renta fija (Obligaciones Negociables - ON), permitiendo al usuario final interactuar mediante lenguaje natural a través de la plataforma Telegram. La solución no solo centraliza la visualización del portfolio, sino que aplica modelos de optimización de varianza mínima, análisis de sentimiento de noticias y simulaciones estocásticas para proyectar flujos de fondos y proponer rebalanceos estratégicos.
+Este trabajo presenta el diseño e implementación de un asistente financiero inteligente basado en una arquitectura de micro-agentes coordinados. El sistema integra datos en tiempo real de activos de renta variable (Acciones), permitiendo al usuario final interactuar mediante lenguaje natural a través de la plataforma Telegram. La solución no solo centraliza la visualización del portfolio, sino que aplica modelos de optimización de varianza mínima, análisis de sentimiento de noticias y simulaciones estocásticas para proyectar flujos de fondos y proponer rebalanceos estratégicos.
 \end{abstract}
 
 \section{Introducción}
-El acceso a mercados financieros ha crecido exponencialmente, sin embargo, la complejidad técnica para analizar instrumentos de deuda privada (ONs) y acciones locales e internacionales sigue siendo una barrera para el inversor promedio. Este proyecto propone un asistente que utiliza Modelos de Lenguaje de Gran Escala (LLM) no solo como interfaz, sino como orquestador de herramientas cuantitativas.
+El acceso a mercados financieros ha crecido exponencialmente, sin embargo, la complejidad técnica para analizar acciones locales e internacionales sigue siendo una barrera para el inversor promedio. Este proyecto propone un asistente que utiliza Modelos de Lenguaje de Gran Escala (LLM) no solo como interfaz, sino como orquestador de herramientas cuantitativas.
 
 El objetivo principal es resolver la asimetría de información mediante tres pilares:
 \begin{itemize}
@@ -64,7 +66,6 @@ $$ \min w^T \Sigma w $$
 Sujeto a:
 $$ \sum w_i = 1, \quad w_i \geq 0 $$
 
-En el caso de las Obligaciones Negociables, el sistema prioriza el cálculo de la Tasa Interna de Retorno (TIR) y la \textit{Duration} para mitigar el riesgo de tasa de interés.
 
 \section{Sinergia Multi-Agente: News Scout y Optimización Quant}
 La innovación de este sistema radica en la retroalimentación entre el análisis cualitativo y el cuantitativo. Mientras que el \textit{Agente Quant} opera sobre series de tiempo históricas para calcular la matriz de covarianza $\Sigma$, el \textit{News Scout} proporciona un "ajuste de sentimiento" ($\alpha_{sent}$) que modifica los retornos esperados en tiempo real.
@@ -78,5 +79,6 @@ El stack tecnológico seleccionado comprende Python 3.11+, utilizando \textit{Ai
 
 \section{Resultados esperados/Conclusión}
 La implementación de un sistema multi-agente permite una escalabilidad superior a los chatbots lineales tradicionales. La capacidad de integrar análisis de noticias con modelos econométricos tradicionales posiciona a este asistente como una herramienta integral para la toma de decisiones financieras en tiempo real.
+
 
 \end{document}
