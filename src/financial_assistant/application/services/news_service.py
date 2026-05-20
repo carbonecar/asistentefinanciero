@@ -52,11 +52,19 @@ class NewsService:
             cached = await self._repo.get_by_tickers(query.tickers, from_date, today)
             missing = [t for t in query.tickers if not cached.get(t)]
 
-            # Tickers fully covered by DB — fetch headlines separately (no FinBERT)
+            # For DB-cached tickers, re-run FinBERT on the last N days so the
+            # user sees fresh sentiment + headlines (not just bare titles).
             cached_tickers = [t for t in query.tickers if cached.get(t)]
-            cached_headlines = await self._fetch_headlines(
-                cached_tickers, today - timedelta(days=self._HEADLINE_LOOKBACK_DAYS), today
+            recent_from = today - timedelta(days=self._HEADLINE_LOOKBACK_DAYS)
+            recent_sentiment, cached_headlines = await self._analyze_range(
+                cached_tickers, recent_from, today
             )
+            # Merge: recent days override the DB rows for the same dates
+            for ticker, recent_days in recent_sentiment.items():
+                if ticker in cached and recent_days:
+                    recent_dates = {d.date for d in recent_days}
+                    merged = [d for d in cached[ticker] if d.date not in recent_dates] + recent_days
+                    cached[ticker] = sorted(merged, key=lambda d: d.date)
 
             if not missing:
                 return cached, cached_headlines
@@ -75,24 +83,11 @@ class NewsService:
         sentiment, _ = await self._analyze_range(query.tickers, from_date, today)
         return sentiment
 
-    async def _fetch_headlines(
-        self, tickers: list[str], from_date: date, to_date: date
-    ) -> dict[str, list[str]]:
-        """Fetch recent article titles without running sentiment analysis."""
-        result: dict[str, list[str]] = {}
-        for ticker in tickers:
-            articles = await self._gateway.fetch_articles_in_range(
-                ticker=ticker, from_date=from_date, to_date=to_date
-            )
-            sorted_articles = sorted(articles, key=lambda a: a.published_at, reverse=True)
-            result[ticker] = [a.title for a in sorted_articles[: self._MAX_HEADLINES] if a.title]
-        return result
-
     async def _analyze_range(
         self, tickers: list[str], from_date: date, to_date: date
-    ) -> tuple[dict[str, list[DailySentiment]], dict[str, list[str]]]:
+    ) -> tuple[dict[str, list[DailySentiment]], dict[str, list[dict[str, object]]]]:
         result: dict[str, list[DailySentiment]] = {}
-        headlines: dict[str, list[str]] = {}
+        headlines: dict[str, list[dict[str, object]]] = {}
 
         for ticker in tickers:
             articles = await self._gateway.fetch_articles_in_range(
@@ -101,11 +96,16 @@ class NewsService:
                 to_date=to_date,
             )
 
-            # Collect most recent headlines before grouping by day
+            # Score the N most recent articles individually for the headlines block
             sorted_articles = sorted(articles, key=lambda a: a.published_at, reverse=True)
-            headlines[ticker] = [
-                a.title for a in sorted_articles[: self._MAX_HEADLINES] if a.title
-            ]
+            top_articles = [a for a in sorted_articles[: self._MAX_HEADLINES] if a.title]
+            article_sentiments: list[dict[str, object]] = []
+            for article in top_articles:
+                sent = self._sentiment.score(ticker, [article])
+                article_sentiments.append(
+                    {"title": article.title, "label": sent.label, "score": sent.score}
+                )
+            headlines[ticker] = article_sentiments  # type: ignore[assignment]
 
             by_day: dict[date, list[NewsArticle]] = defaultdict(list)
             for article in articles:

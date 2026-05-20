@@ -143,7 +143,7 @@ def _build_data_summary(state: AgentState) -> str:
     news_results = state.get("news_results") or {}
     # Only consider news_results non-empty if at least one ticker has actual daily data
     has_news_data = isinstance(news_results, dict) and any(daily for daily in news_results.values())
-    headlines_map: dict[str, list[str]] = state.get("news_headlines") or {}  # type: ignore[assignment]
+    headlines_map: dict[str, list[dict[str, object]]] = state.get("news_headlines") or {}  # type: ignore[assignment]
     if has_news_data:
         parts.append("NEWS SENTIMENT (últimos 60 días):")
         for ticker, daily in news_results.items():
@@ -155,9 +155,9 @@ def _build_data_summary(state: AgentState) -> str:
             for day in daily[-3:]:
                 parts.append(f"    {day.date}: {day.label} {day.score:+.4f} ({day.article_count} art.)")
             if headlines_map.get(ticker):
-                parts.append(f"  Titulares recientes ({ticker}):")
-                for h in headlines_map[ticker]:
-                    parts.append(f"    - {h}")
+                parts.append(f"  Noticias recientes ({ticker}):")
+                for item in headlines_map[ticker]:
+                    parts.append(f"    [{item['label']} {float(item['score']):+.2f}] {item['title']}")
     elif "news" in intents:
         parts.append(
             "NEWS STATUS: No se obtuvieron noticias. "
