@@ -24,6 +24,7 @@ class Node:
     UNSUPPORTED = "unsupported"
     POST_FETCH_ROUTER = "post_fetch_router"
     SENTIMENT_ROUTER = "sentiment_router"
+    QUANT_NO_SENTIMENT = "quant_no_sentiment"
 
 
 NODE_FOR_INTENT: dict[str, str] = {
@@ -64,6 +65,7 @@ class AgentState(TypedDict):
     market_data_result: dict[str, Any] | None
     audit_report: AuditReport | None
     quant_result: QuantResult | None
+    quant_result_no_sentiment: QuantResult | None
     news_results: list[SentimentResult] | None
     exchange_rates: list[ExchangeRate] | None
 

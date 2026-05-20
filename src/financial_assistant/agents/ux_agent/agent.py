@@ -140,6 +140,29 @@ def _build_data_summary(state: AgentState) -> str:
     elif "optimize" in intents:
         parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
+    if state.get("quant_result_no_sentiment"):
+        qr = state["quant_result_no_sentiment"]
+        if qr is not None and qr.optimized_weights:
+            w = qr.optimized_weights
+            parts.append("OPTIMIZED PORTFOLIO (sin ajuste de sentimiento):")
+            parts.append(f"  Expected return: {w.expected_annual_return:.2%}")
+            parts.append(f"  Volatility: {w.annual_volatility:.2%}")
+            parts.append(f"  Sharpe ratio: {w.sharpe_ratio:.2f}")
+            for ticker, weight in w.weights.items():
+                if weight > 0.001:
+                    parts.append(f"  {ticker}: {weight:.1%}")
+            if qr.rebalancing_trades:
+                total_val = sum(abs(t.trade_value_usd) for t in qr.rebalancing_trades) / 2
+                parts.append(f"  REBALANCEO (valor total: ${total_val:,.0f}):")
+                for trade in qr.rebalancing_trades:
+                    if abs(trade.delta_weight) < 0.001:
+                        continue
+                    action = "COMPRAR" if trade.trade_value_usd > 0 else "VENDER"
+                    parts.append(
+                        f"    {trade.ticker}: {trade.current_weight:.1%} → {trade.target_weight:.1%} "
+                        f"| {action} ${abs(trade.trade_value_usd):,.0f} ({trade.delta_weight:+.1%})"
+                    )
+
     if state.get("news_results"):
         parts.append("NEWS SENTIMENT:")
         results = state["news_results"] or []
