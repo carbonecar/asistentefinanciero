@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1778973654.92732 "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" "asistente_financiero.pdf" "asistente_financiero" 1778973655.38094 0
-  "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" 1778973654.28526 5498 23e057643a98a23ba21792a375ed18b7 ""
+["pdflatex"] 1779289227.0336 "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" "asistente_financiero.pdf" "asistente_financiero" 1779289227.5182 0
+  "/Users/carbonecar/maestria_ia/nlp/trabajo_practico/asistente_financiero/doc/asistente_financiero.tex" 1779289226.62362 5474 a120a0708ea4a8c48cb85a210149bccb ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -64,8 +64,8 @@
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1744256002 3345740 16da992f8d5b798dcc13f02afb8e0a1f ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
   "arquitectura_asistente.png" 1774129950.32164 426925 264ad2582008cb142db29745190a04a3 ""
-  "asistente_financiero.aux" 1778973655.34334 1375 710c47da96faa23c11911806b5a475a6 "pdflatex"
-  "asistente_financiero.tex" 1778973654.28526 5498 23e057643a98a23ba21792a375ed18b7 ""
+  "asistente_financiero.aux" 1779289227.47724 1375 710c47da96faa23c11911806b5a475a6 "pdflatex"
+  "asistente_financiero.tex" 1779289226.62362 5474 a120a0708ea4a8c48cb85a210149bccb ""
   (generated)
   "asistente_financiero.aux"
   "asistente_financiero.log"
