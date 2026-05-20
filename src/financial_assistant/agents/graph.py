@@ -118,10 +118,17 @@ def route_by_intent(state: AgentState) -> list[str]:
         seen: set[str] = set()
         destinations = []
         for i in intents:
-            dest = _resolve_destination(i, use_sentiment)
-            if dest not in seen:
-                seen.add(dest)
-                destinations.append(dest)
+            if i == "optimize" and use_sentiment:
+                # Dos optimizaciones en paralelo: con sentimiento (vía news_scout) y sin sentimiento
+                for dest in (Node.NEWS_SCOUT, Node.QUANT_NO_SENTIMENT):
+                    if dest not in seen:
+                        seen.add(dest)
+                        destinations.append(dest)
+            else:
+                dest = _resolve_destination(i, use_sentiment)
+                if dest not in seen:
+                    seen.add(dest)
+                    destinations.append(dest)
     logger.info("[GRAPH] supervisor → %s (intents=%s, tickers=%s)", destinations, intents, state.get("active_tickers"))
     return destinations
 
@@ -159,6 +166,12 @@ def post_fetch_route(state: AgentState) -> list[str]:
     remaining: list[str] = []
     for i in intents:
         if i in BLOCKING_INTENTS:
+            continue
+        if i == "optimize" and use_sentiment:
+            for dest in (Node.NEWS_SCOUT, Node.QUANT_NO_SENTIMENT):
+                if dest not in seen:
+                    seen.add(dest)
+                    remaining.append(dest)
             continue
         dest = _resolve_destination(i, use_sentiment)
         if dest not in seen:
@@ -217,12 +230,18 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.add_node(Node.SUPERVISOR, make_supervisor_node(**llm_kwargs))
     workflow.add_node(Node.DATA_FETCHER, make_data_fetcher_node(market_data_service, portfolio_service))  # type: ignore[call-overload]
     workflow.add_node(Node.AUDITOR, make_auditor_node(audit_service))
-    workflow.add_node(Node.QUANT, make_quant_node(quant_service))
+    workflow.add_node(Node.QUANT, make_quant_node(quant_service))  # type: ignore[call-overload]
+    workflow.add_node(
+        Node.QUANT_NO_SENTIMENT,
+        make_quant_node(quant_service, result_key="quant_result_no_sentiment", force_no_sentiment=True),  # type: ignore[call-overload]
+    )
     workflow.add_node(Node.NEWS_SCOUT, make_news_scout_node(news_service, portfolio_service))  # type: ignore[call-overload]
     workflow.add_node(Node.FX_FETCHER, make_fx_fetcher_node(fx_gateway))
     workflow.add_node(Node.UX_AGENT, make_ux_node(**llm_kwargs))
     workflow.add_node(Node.UNSUPPORTED, unsupported_node)
-    workflow.add_node(Node.POST_FETCH_ROUTER, lambda _: {})
+    workflow.add_node(
+        Node.POST_FETCH_ROUTER, lambda _: {}
+    )  # nodo de enrutamiento sin procesamiento, solo para decidir el siguiente paso después de data_fetcher
     workflow.add_node(Node.SENTIMENT_ROUTER, lambda _: {})
 
     # Punto de entrada
@@ -232,6 +251,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
         Node.DATA_FETCHER: Node.DATA_FETCHER,
         Node.AUDITOR: Node.AUDITOR,
         Node.QUANT: Node.QUANT,
+        Node.QUANT_NO_SENTIMENT: Node.QUANT_NO_SENTIMENT,
         Node.NEWS_SCOUT: Node.NEWS_SCOUT,
         Node.FX_FETCHER: Node.FX_FETCHER,
         Node.UNSUPPORTED: Node.UNSUPPORTED,
@@ -243,8 +263,8 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     workflow.add_edge(Node.DATA_FETCHER, Node.POST_FETCH_ROUTER)
     workflow.add_conditional_edges(Node.POST_FETCH_ROUTER, post_fetch_route, _specialist_map)
 
-    # auditor y quant convergen en fx_fetcher
-    for node in (Node.AUDITOR, Node.QUANT):
+    # auditor, quant y quant_no_sentiment convergen en fx_fetcher
+    for node in (Node.AUDITOR, Node.QUANT, Node.QUANT_NO_SENTIMENT):
         workflow.add_edge(node, Node.FX_FETCHER)
 
     # news_scout siempre pasa por sentiment_router, que decide si continúa a quant o fx_fetcher
