@@ -7,18 +7,22 @@ from financial_assistant.application.services.quant_service import QuantService
 logger = logging.getLogger(__name__)
 
 
-def make_quant_node(quant_service: QuantService):  # type: ignore[no-untyped-def]
+def make_quant_node(
+    quant_service: QuantService,
+    result_key: str = "quant_result",
+    force_no_sentiment: bool = False,
+) -> object:
     async def quant_node(state: AgentState) -> dict:  # type: ignore[type-arg]
         user_id = state["user_id"]
-        use_sentiment = state.get("use_sentiment", False)
-        news_results = state.get("news_results")
+        use_sentiment = False if force_no_sentiment else state.get("use_sentiment", False)
+        news_results = None if force_no_sentiment else state.get("news_results")
 
         try:
             query = OptimizePortfolioQuery(user_id=user_id, use_sentiment=use_sentiment)
             result = await quant_service.optimize(query, sentiment_results=news_results)
-            return {"quant_result": result, "errors": []}
+            return {result_key: result, "errors": []}
         except Exception as exc:
             logger.error("Quant failed for user %s: %s", user_id, exc)
-            return {"quant_result": None, "errors": [str(exc)]}
+            return {result_key: None, "errors": [str(exc)]}
 
     return quant_node

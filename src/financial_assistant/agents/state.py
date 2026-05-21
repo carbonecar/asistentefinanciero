@@ -24,6 +24,7 @@ class Node:
     UNSUPPORTED = "unsupported"
     POST_FETCH_ROUTER = "post_fetch_router"
     SENTIMENT_ROUTER = "sentiment_router"
+    QUANT_NO_SENTIMENT = "quant_no_sentiment"
 
 
 NODE_FOR_INTENT: dict[str, str] = {
