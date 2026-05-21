@@ -12,6 +12,7 @@ class AddPositionCommand:
     quantity: Decimal
     avg_cost_usd: Decimal
     currency: str = "USD"
+    purchase_date: str | None = None
 
 
 @dataclass(frozen=True)

@@ -1,3 +1,4 @@
+from datetime import date
 import logging
 import re
 from decimal import Decimal
@@ -133,12 +134,16 @@ def make_data_fetcher_node(
                 logger.warning("[DataFetcher] user=%s — skipping incomplete position: %s", user_id, pos)
                 continue
             try:
+                purchase_date_raw = pos.get("purchase_date")
+                purchase_date = date.fromisoformat(purchase_date_raw) if purchase_date_raw else date.today()
+    
                 add_cmd = AddPositionCommand(
                     user_id=user_id,
                     ticker=ticker,
                     asset_type=AssetType(asset_type_raw),
                     quantity=Decimal(str(quantity)),
                     avg_cost_usd=Decimal(str(avg_cost_usd)),
+                    purchase_date=purchase_date,
                 )
                 await portfolio_service.add_position(add_cmd)
                 logger.info(
