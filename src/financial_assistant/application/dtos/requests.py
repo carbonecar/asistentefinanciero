@@ -36,3 +36,9 @@ class OptimizePortfolioQuery:
 class NewsQuery:
     tickers: list[str]
     max_articles_per_ticker: int = 10
+
+
+@dataclass(frozen=True)
+class HistoricalNewsQuery:
+    tickers: list[str]
+    lookback_days: int = 60  # how many calendar days back from today

@@ -3,7 +3,7 @@ from abc import ABC
 from financial_assistant.application.dtos.requests import OptimizePortfolioQuery
 from financial_assistant.domain.models.analysis import OptimizedWeights, QuantResult, RebalancingTrade, SimulationResult
 from financial_assistant.domain.models.market_data import OHLCV
-from financial_assistant.domain.models.news import SentimentResult
+from financial_assistant.domain.models.news import DailySentiment
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
 from financial_assistant.domain.ports.repositories import IPortfolioRepository
 
@@ -38,7 +38,7 @@ class QuantService:
     async def optimize(
         self,
         query: OptimizePortfolioQuery,
-        sentiment_results: list[SentimentResult] | None = None,
+        sentiment_results: dict[str, list[DailySentiment]] | None = None,
     ) -> QuantResult | None:
         portfolio = await self._portfolio_repo.get_by_user_id(query.user_id)
         if not portfolio or portfolio.is_empty():
@@ -49,7 +49,15 @@ class QuantService:
             records = await self._market_gateway.fetch_ohlcv(ticker, period="1y")
             ohlcv_by_ticker[ticker] = records
 
-        sentiment_map = {r.ticker: r.score for r in sentiment_results} if sentiment_results else {}
+        sentiment_map = (
+            {
+                ticker: sum(d.score for d in daily) / len(daily)
+                for ticker, daily in sentiment_results.items()
+                if daily
+            }
+            if sentiment_results
+            else {}
+        )
 
         weights = self._optimizer.minimum_variance(
             ohlcv_by_ticker,
