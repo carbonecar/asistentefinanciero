@@ -2,11 +2,20 @@
 
 COMPOSE_DEV  = docker compose -f docker/docker-compose.yml
 COMPOSE_PROD = docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml
-PYTHON       = .venv/bin/python
-RUFF         = .venv/bin/ruff
-MYPY         = .venv/bin/mypy
-PYTEST       = .venv/bin/pytest
-ALEMBIC      = .venv/bin/alembic
+
+ifeq ($(OS),Windows_NT)
+    ALEMBIC = .venv/Scripts/alembic.exe
+    PYTHON = .venv/Scripts/python.exe
+    RUFF = .venv/Scripts/ruff.exe
+    MYPY = .venv/Scripts/mypy.exe
+    PYTEST = .venv/Scripts/pytest.exe
+else
+    ALEMBIC = .venv/bin/alembic
+    PYTHON = .venv/bin/python
+    RUFF = .venv/bin/ruff
+    MYPY = .venv/bin/mypy
+    PYTEST = .venv/bin/pytest
+endif
 
 # Primera vez: crea el venv, instala deps y registra los hooks de pre-commit
 setup:

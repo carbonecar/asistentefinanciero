@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 
@@ -18,6 +18,7 @@ class Position:
     quantity: Decimal
     avg_cost_usd: Decimal
     currency: str = "USD"
+    purchase_date: date | None = None
 
     @property
     def total_cost_usd(self) -> Decimal:

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Numeric, String, UniqueConstraint
@@ -32,7 +32,8 @@ class PositionORM(Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     avg_cost_usd: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False, default="USD")
-
+    purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    
     portfolio: Mapped["PortfolioORM"] = relationship(back_populates="positions")
 
 

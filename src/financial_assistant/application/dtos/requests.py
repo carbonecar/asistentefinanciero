@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 
 from financial_assistant.domain.models.portfolio import AssetType
@@ -12,6 +13,7 @@ class AddPositionCommand:
     quantity: Decimal
     avg_cost_usd: Decimal
     currency: str = "USD"
+    purchase_date: date | None = None
 
 
 @dataclass(frozen=True)
