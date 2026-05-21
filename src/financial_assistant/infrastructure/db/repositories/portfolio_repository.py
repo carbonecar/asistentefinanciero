@@ -66,6 +66,7 @@ class PostgresPortfolioRepository(IPortfolioRepository):
                         quantity=position.quantity,
                         avg_cost_usd=position.avg_cost_usd,
                         currency=position.currency,
+                        purchase_date=position.purchase_date,
                     )
                 )
 
@@ -98,6 +99,7 @@ class PostgresPortfolioRepository(IPortfolioRepository):
                 quantity=p.quantity,
                 avg_cost_usd=p.avg_cost_usd,
                 currency=p.currency,
+                purchase_date=p.purchase_date,
             )
             for p in orm.positions
         ]

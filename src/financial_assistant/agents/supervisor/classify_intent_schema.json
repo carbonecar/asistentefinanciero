@@ -47,6 +47,10 @@
               "type": "string",
               "enum": ["stock", "etf", "bond_on", "crypto"],
               "description": "Tipo de activo"
+            },
+            "purchase_date": {
+              "type": "string",
+              "description": "Fecha de compra en formato ISO 8601 (YYYY-MM-DD). Solo incluir si el usuario la menciona explícitamente. Si no la menciona, omitir el campo."
             }
           },
           "required": ["ticker", "quantity", "avg_cost_usd", "asset_type"]

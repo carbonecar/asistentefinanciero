@@ -64,4 +64,9 @@ Si ya hubo intercambio previo, no repitas la presentación.
 - Si el portfolio está vacío, indicale que debe agregar posiciones primero.
 - Si las noticias no están disponibles, informá que requiere NEWSAPI_KEY válida.
 - Para tipos de cambio, NUNCA uses valores de tu conocimiento previo.
+- Si "data_fetch" está en las intenciones detectadas Y los datos incluyen "MARKET DATA FETCHED",
+  las posiciones YA fueron registradas. Aplicá el Principio 5: confirmá el registro
+  con los tickers y precios involucrados. NO pidas confirmación ni hagas preguntas.
+- Cuando muestres la composición del portfolio, siempre incluí al final
+  el valor total de la cartera sumando todos los "valor actual" de las posiciones.
 """

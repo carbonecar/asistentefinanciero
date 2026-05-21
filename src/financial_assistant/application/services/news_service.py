@@ -3,25 +3,13 @@ from datetime import date, timedelta
 from typing import Protocol
 
 from financial_assistant.application.dtos.requests import HistoricalNewsQuery, NewsQuery
-from financial_assistant.domain.models.news import DailySentiment, NewsArticle
+from financial_assistant.domain.models.news import DailySentiment, NewsArticle, SentimentResult
 from financial_assistant.domain.ports.historical_news_gateway import IHistoricalNewsGateway
 from financial_assistant.domain.ports.sentiment_history_repository import ISentimentHistoryRepository
 
 
 class SentimentAnalyzerProtocol(Protocol):
-    """
-    Protocol for sentiment analysis of news articles related to financial assets.
-    This interface is for checking the sentiment analysis signture
-    Nobody implements this directrly. mypy will check that the actual implementation
-    (e.g. FinBERTSentimentAnalyzer) matches this protocol.
-    """
-
-    def score(self, ticker: str, articles: list[NewsArticle]) -> "SentimentResultProtocol": ...
-
-
-class SentimentResultProtocol(Protocol):
-    score: float
-    label: str
+    def score(self, ticker: str, articles: list[NewsArticle]) -> SentimentResult: ...
 
 
 class NewsService:
@@ -42,7 +30,7 @@ class NewsService:
 
     async def analyze_sentiment(
         self, query: NewsQuery
-    ) -> tuple[dict[str, list[DailySentiment]], dict[str, list[str]]]:
+    ) -> tuple[dict[str, list[DailySentiment]], dict[str, list[dict[str, object]]]]:
         """Return (daily_sentiment, recent_headlines) for the last 60 days.
         Sentiment for pre-computed tickers comes from DB; headlines always fetched live."""
         today = date.today()
@@ -105,7 +93,7 @@ class NewsService:
                 article_sentiments.append(
                     {"title": article.title, "label": sent.label, "score": sent.score}
                 )
-            headlines[ticker] = article_sentiments  # type: ignore[assignment]
+            headlines[ticker] = article_sentiments
 
             by_day: dict[date, list[NewsArticle]] = defaultdict(list)
             for article in articles:

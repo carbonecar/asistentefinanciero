@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import UTC, date, datetime, timedelta
 from functools import partial
+from typing import Any
 
 import httpx
 
@@ -102,7 +103,7 @@ class FinnhubNewsGateway(INewsGateway, IHistoricalNewsGateway):
             with httpx.Client(timeout=_TIMEOUT_SECONDS) as client:
                 response = client.get(_BASE_URL, params=params)
                 response.raise_for_status()
-                items: list[dict] = response.json() or []
+                items: list[dict[str, Any]] = response.json() or []
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("[Finnhub] Failed to fetch news for %s (%s -> %s)", ticker, from_date, to_date)
             return []
