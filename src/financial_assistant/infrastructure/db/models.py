@@ -49,3 +49,15 @@ class OHLCVRecordORM(Base):
     low: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     close: Mapped[Decimal] = mapped_column(Numeric(18, 6), nullable=False)
     volume: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
+class SentimentHistoryORM(Base):
+    __tablename__ = "sentiment_history"
+    __table_args__ = (UniqueConstraint("ticker", "date", name="uq_sentiment_ticker_date"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    ticker: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
+    date: Mapped[datetime] = mapped_column(Date, index=True, nullable=False)
+    score: Mapped[float] = mapped_column(nullable=False)
+    label: Mapped[str] = mapped_column(String(10), nullable=False)
+    article_count: Mapped[int] = mapped_column(nullable=False)

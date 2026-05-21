@@ -62,6 +62,11 @@ test:
 test-integration:
 	$(PYTEST) tests/integration/ -v -m integration
 
+## Pre-computes historical sentiment and saves it to the DB.
+## Requires: infra-up + migrate + ANALYSIS_TICKERS in .env
+sentiment-batch:
+	$(PYTHON) -m scripts.run_sentiment_batch
+
 lint:
 	$(RUFF) check src/ tests/
 	$(MYPY) src/

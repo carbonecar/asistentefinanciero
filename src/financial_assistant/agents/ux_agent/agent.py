@@ -140,42 +140,28 @@ def _build_data_summary(state: AgentState) -> str:
     elif "optimize" in intents:
         parts.append("OPTIMIZE STATUS: El portfolio está vacío o tiene menos de 2 activos. No se puede optimizar.")
 
-    if state.get("quant_result_no_sentiment"):
-        qr = state["quant_result_no_sentiment"]
-        if qr is not None and qr.optimized_weights:
-            w = qr.optimized_weights
-            parts.append("OPTIMIZED PORTFOLIO (sin ajuste de sentimiento):")
-            parts.append(f"  Expected return: {w.expected_annual_return:.2%}")
-            parts.append(f"  Volatility: {w.annual_volatility:.2%}")
-            parts.append(f"  Sharpe ratio: {w.sharpe_ratio:.2f}")
-            for ticker, weight in w.weights.items():
-                if weight > 0.001:
-                    parts.append(f"  {ticker}: {weight:.1%}")
-            if qr.rebalancing_trades:
-                total_val = sum(abs(t.trade_value_usd) for t in qr.rebalancing_trades) / 2
-                parts.append(f"  REBALANCEO (valor total: ${total_val:,.0f}):")
-                for trade in qr.rebalancing_trades:
-                    if abs(trade.delta_weight) < 0.001:
-                        continue
-                    action = "COMPRAR" if trade.trade_value_usd > 0 else "VENDER"
-                    parts.append(
-                        f"    {trade.ticker}: {trade.current_weight:.1%} → {trade.target_weight:.1%} "
-                        f"| {action} ${abs(trade.trade_value_usd):,.0f} ({trade.delta_weight:+.1%})"
-                    )
-
-    if state.get("news_results"):
-        parts.append("NEWS SENTIMENT:")
-        results = state["news_results"] or []
-        for result in results:
-            parts.append(
-                f"  {result.ticker}: {result.label} (score: {result.score:+.3f}, {result.article_count} articles)"
-            )
-            for headline in result.representative_headlines:
-                parts.append(f"    - {headline}")
+    news_results = state.get("news_results") or {}
+    # Only consider news_results non-empty if at least one ticker has actual daily data
+    has_news_data = isinstance(news_results, dict) and any(daily for daily in news_results.values())
+    headlines_map: dict[str, list[dict[str, object]]] = state.get("news_headlines") or {}  # type: ignore[assignment]
+    if has_news_data:
+        parts.append("NEWS SENTIMENT (últimos 60 días):")
+        for ticker, daily in news_results.items():
+            if not daily:
+                continue
+            avg_score = sum(d.score for d in daily) / len(daily)
+            dominant = max(set(d.label for d in daily), key=lambda lbl: sum(1 for d in daily if d.label == lbl))
+            parts.append(f"  {ticker}: {dominant} (score prom: {avg_score:+.3f}, {len(daily)} días con noticias)")
+            for day in daily[-3:]:
+                parts.append(f"    {day.date}: {day.label} {day.score:+.4f} ({day.article_count} art.)")
+            if headlines_map.get(ticker):
+                parts.append(f"  Noticias recientes ({ticker}):")
+                for item in headlines_map[ticker]:
+                    parts.append(f"    [{item['label']} {float(item['score']):+.2f}] {item['title']}")
     elif "news" in intents:
         parts.append(
             "NEWS STATUS: No se obtuvieron noticias. "
-            "Posibles causas: NEWSAPI_KEY no configurada, o no se detectaron tickers en el mensaje."
+            "Posibles causas: FINNHUB_API_KEY no configurada, o no se detectaron tickers en el mensaje."
         )
 
     if state.get("market_data_result"):
