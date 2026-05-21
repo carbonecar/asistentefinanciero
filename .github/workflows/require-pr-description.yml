@@ -1,0 +1,19 @@
+name: Require PR description
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  check-description:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR body is not empty
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [ -z "$(echo "$PR_BODY" | tr -d '[:space:]')" ]; then
+            echo "❌ El PR no tiene descripción. Agregá contexto antes de mergear."
+            exit 1
+          fi
+          echo "✅ Descripción presente."
