@@ -73,6 +73,15 @@ EJEMPLOS:
 - "registrá mis acciones" → ["data_fetch"]
 - "cargá mis posiciones y auditá mi cartera" → ["data_fetch", "audit"]
 
+# Data fetch — extracción de fecha de compra
+- "compré 10 AAPL a $150 el 15 de enero de 2024" → ["data_fetch"],
+  positions=[{ticker:"AAPL", quantity:10, avg_cost_usd:150, asset_type:"stock", purchase_date:"2024-01-15"}]
+- "tengo 10 AAPL a $150, las compré el 15/01/2024" → ["data_fetch"],
+  positions=[{ticker:"AAPL", quantity:10, avg_cost_usd:150, asset_type:"stock", purchase_date:"2024-01-15"}]
+- "agregá MSFT, compré 5 a $300" → ["data_fetch"],
+  positions=[{ticker:"MSFT", quantity:5, avg_cost_usd:300, asset_type:"stock"}]
+  (sin fecha → omitir purchase_date)
+
 # Data fetch — declaración con intención explícita de registrar → data_fetch
 - "tengo 10 acciones de apple y 10 de google, registralas" → ["data_fetch"], tickers=["AAPL","GOOGL"]
 - "quiero que registres mis posiciones: 10 apple y 10 google" → ["data_fetch"], tickers=["AAPL","GOOGL"]
