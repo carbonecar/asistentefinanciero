@@ -6,6 +6,7 @@ from typing import Any
 
 from financial_assistant.agents.state import AgentState
 from financial_assistant.application.dtos.requests import AddPositionCommand, FetchMarketDataCommand
+from financial_assistant.application.services import portfolio_service
 from financial_assistant.application.services.market_data_service import MarketDataService
 from financial_assistant.application.services.portfolio_service import PortfolioService
 from financial_assistant.domain.models.portfolio import AssetType
@@ -104,6 +105,7 @@ def make_data_fetcher_node(
         Returns:
             dict con:
                 - market_data_result: datos OHLCV por ticker
+                - pending_positions: posiciones esperando confirmación de precio histórico
                 - errors: lista de mensajes de error (vacía si todo ok)
         """
         raw_tickers: list[str] = state.get("active_tickers") or []
@@ -112,31 +114,92 @@ def make_data_fetcher_node(
         user_id: int = state.get("user_id", 0)
         positions: list[dict[str, Any]] = state.get("positions") or []
 
+        # Si no hay posiciones nuevas pero hay pending_positions, es una confirmación directa
+        # El usuario ya aprobó el precio — registrar sin pasar por el supervisor
+        pending_in_state = state.get("pending_positions") or []
+        if not positions and pending_in_state:
+            logger.info("[DataFetcher] user=%s — direct confirmation, registering %d pending positions", user_id, len(pending_in_state))
+            for p in pending_in_state:
+                try:
+                    add_cmd = AddPositionCommand(
+                        user_id=user_id,
+                        ticker=p["ticker"],
+                        asset_type=AssetType(p["asset_type"]),
+                        quantity=Decimal(str(p["quantity"])),
+                        avg_cost_usd=Decimal(str(p["suggested_price"])),
+                        purchase_date=date.fromisoformat(p["purchase_date"]),
+                    )
+                    await portfolio_service.add_position(add_cmd)
+                    logger.info("[DataFetcher] user=%s — confirmed position saved: %s x%s @ $%s",
+                        user_id, p["ticker"], p["quantity"], p["suggested_price"])
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("[DataFetcher] user=%s — failed to save confirmed position %s: %s", user_id, p["ticker"], exc)
+            return {
+                "market_data_result": {},
+                "pending_positions": [],
+                "errors": [],
+            }
+
         if not raw_tickers:
             logger.warning("[DataFetcher] user=%s — no tickers in state, skipping", user_id)
-            return {"market_data_result": {}, "errors": []}
+            return {"market_data_result": {}, "pending_positions": [], "errors": []}
 
         tickers, rejected = _normalize_tickers(raw_tickers)
 
         if not tickers:
             return {
                 "market_data_result": {},
+                "pending_positions": [],
                 "errors": [f"Los tickers no son válidos: {raw_tickers}"],
             }
 
+        # Precios sugeridos de pending_positions del turno anterior (confirmación del usuario)
+        pending_in_state = state.get("pending_positions") or []
+        confirmed_prices = {p["ticker"]: p["suggested_price"] for p in pending_in_state}
+
         # Persistir posiciones extraídas por el supervisor LLM
+        pending_positions: list[dict] = []
+
         for pos in positions:
             ticker = str(pos.get("ticker", "")).upper()
             quantity = float(pos.get("quantity") or 0)
             avg_cost_usd = float(pos.get("avg_cost_usd") or 0)
             asset_type_raw = str(pos.get("asset_type") or "stock")
+            purchase_date_raw = pos.get("purchase_date")
+            purchase_date = date.fromisoformat(purchase_date_raw) if purchase_date_raw else None
+
             if not ticker or quantity <= 0:
                 logger.warning("[DataFetcher] user=%s — skipping incomplete position: %s", user_id, pos)
                 continue
+
+            # Sin fecha de compra no se puede registrar — el ux_agent debe pedirla
+            if not purchase_date:
+                logger.warning("[DataFetcher] user=%s — skipping %s: missing purchase_date", user_id, ticker)
+                continue
+
+            # Con fecha — buscar precio histórico y proponer al usuario
+            if ticker in confirmed_prices:
+                # Ya fue confirmado en turno anterior, usar el precio sugerido
+                avg_cost_usd = confirmed_prices[ticker]
+                logger.info(
+                    "[DataFetcher] user=%s — using confirmed historical price for %s: $%s",
+                    user_id, ticker, avg_cost_usd,
+                )
+            else:
+                # Primera vez — buscar precio histórico y poner en pending
+                historical_price = await market_data_service.get_price_at_date(ticker, purchase_date)
+                if historical_price:
+                    pending = {
+                        "ticker": ticker,
+                        "quantity": quantity,
+                        "asset_type": asset_type_raw,
+                        "purchase_date": purchase_date_raw,
+                        "suggested_price": historical_price,
+                    }
+                    pending_positions.append(pending)
+                    continue
+
             try:
-                purchase_date_raw = pos.get("purchase_date")
-                purchase_date = date.fromisoformat(purchase_date_raw) if purchase_date_raw else date.today()
-    
                 add_cmd = AddPositionCommand(
                     user_id=user_id,
                     ticker=ticker,
@@ -165,6 +228,7 @@ def make_data_fetcher_node(
             )
             return {
                 "market_data_result": {},
+                "pending_positions": pending_positions,
                 "errors": [f"Error al obtener datos de mercado: {exc}"],
             }
 
@@ -204,6 +268,10 @@ def make_data_fetcher_node(
             rejected_note = f" Tickers con formato inválido ignorados: {rejected}."
             error_msg = (error_msg + rejected_note) if error_msg else rejected_note
 
-        return {"market_data_result": result, "errors": [error_msg] if error_msg else []}
+        return {
+            "market_data_result": result,
+            "pending_positions": pending_positions,
+            "errors": [error_msg] if error_msg else [],
+        }
 
     return data_fetcher_node

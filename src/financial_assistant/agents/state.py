@@ -60,6 +60,7 @@ class AgentState(TypedDict):
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool
     positions: list[dict[str, Any]]  # [{ticker, quantity, avg_cost_usd, asset_type}]
+    pending_positions: list[dict[str, Any]] | None  # posiciones esperando confirmación de precio histórico
 
     # ---- Agent outputs (accumulated) ----
     market_data_result: dict[str, Any] | None

@@ -73,6 +73,11 @@ EJEMPLOS:
 - "registrá mis acciones" → ["data_fetch"]
 - "cargá mis posiciones y auditá mi cartera" → ["data_fetch", "audit"]
 
+# Data fetch — declaración con intención explícita de registrar → data_fetch
+- "tengo 10 acciones de apple y 10 de google, registralas" → ["data_fetch"], tickers=["AAPL","GOOGL"]
+- "quiero que registres mis posiciones: 10 apple y 10 google" → ["data_fetch"], tickers=["AAPL","GOOGL"]
+- "cargá estas posiciones en mi cartera: AAPL x10" → ["data_fetch"], tickers=["AAPL"]
+
 # Data fetch — extracción de fecha de compra
 - "compré 10 AAPL a $150 el 15 de enero de 2024" → ["data_fetch"],
   positions=[{ticker:"AAPL", quantity:10, avg_cost_usd:150, asset_type:"stock", purchase_date:"2024-01-15"}]
@@ -81,11 +86,23 @@ EJEMPLOS:
 - "agregá MSFT, compré 5 a $300" → ["data_fetch"],
   positions=[{ticker:"MSFT", quantity:5, avg_cost_usd:300, asset_type:"stock"}]
   (sin fecha → omitir purchase_date)
+- "compré AAPL el 31 de diciembre" → ["data_fetch"],
+  positions=[{ticker:"AAPL", asset_type:"stock"}]
+  (fecha sin año → omitir purchase_date, el ux_agent pedirá el año)
+- "compré GOOGL en marzo" → ["data_fetch"],
+  positions=[{ticker:"GOOGL", asset_type:"stock"}]
+  (mes sin año ni día → omitir purchase_date, el ux_agent pedirá la fecha completa)
 
-# Data fetch — declaración con intención explícita de registrar → data_fetch
-- "tengo 10 acciones de apple y 10 de google, registralas" → ["data_fetch"], tickers=["AAPL","GOOGL"]
-- "quiero que registres mis posiciones: 10 apple y 10 google" → ["data_fetch"], tickers=["AAPL","GOOGL"]
-- "cargá estas posiciones en mi cartera: AAPL x10" → ["data_fetch"], tickers=["AAPL"]
+REGLA: purchase_date SOLO se incluye cuando el usuario menciona explícitamente día, mes Y año.
+Si falta cualquiera de los tres componentes, omitir purchase_date completamente.
+
+# Confirmación de precio histórico
+- "sí, registrá con ese precio" → ["data_fetch"], positions=[], active_tickers=[]
+- "dale, usá ese valor" → ["data_fetch"], positions=[], active_tickers=[]
+- "no, usá $250" → ["data_fetch"], positions=[], active_tickers=[]
+- "confirmado" → ["data_fetch"], positions=[], active_tickers=[]
+- "si" → ["general"] — NO extraer posiciones del historial
+- "si, adelante" → ["general"] — NO extraer posiciones del historial
 
 # Declaración de datos sin intención explícita → general
 - "tengo MSFT" → ["general"], tickers=["MSFT"]

@@ -56,6 +56,18 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
     llm_with_tools = llm.bind_tools([{"type": "function", "function": CLASSIFY_INTENT_SCHEMA}])
 
     async def supervisor_node(state: AgentState) -> dict:  # type: ignore[type-arg]
+        # Si hay pending_positions, bypasear el LLM y retornar data_fetch directamente
+        pending = state.get("pending_positions") or []
+        if pending:
+            logger.info("[Supervisor] pending_positions detected (%d), bypassing LLM → data_fetch", len(pending))
+            return {
+                "intents": ["data_fetch"],
+                "active_tickers": [p["ticker"] for p in pending],
+                "period": state.get("period", "1y"),
+                "use_sentiment": False,
+                "positions": [],
+            }
+
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
         try:
             response = await llm_with_tools.ainvoke(messages)

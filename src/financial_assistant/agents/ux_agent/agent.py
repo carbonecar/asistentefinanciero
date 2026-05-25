@@ -196,4 +196,16 @@ def _build_data_summary(state: AgentState) -> str:
     if not parts:
         parts.append("No specific financial data available for this query.")
 
+    if state.get("pending_positions"):
+        parts.append("PENDING POSITIONS (esperando confirmación de precio):")
+        for p in state["pending_positions"]:
+            parts.append(
+                f"  {p['ticker']}: {p['quantity']} unidades | "
+                f"fecha: {p['purchase_date']} | "
+                f"precio histórico sugerido: ${p['suggested_price']:.2f}"
+            )
+
+    if state.get("intents") == ["data_fetch"] and state.get("pending_positions") == []:
+        parts.append("POSITIONS REGISTERED: las posiciones pendientes fueron registradas exitosamente.")
+
     return "\n".join(parts)
