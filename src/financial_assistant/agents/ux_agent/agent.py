@@ -5,7 +5,10 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from financial_assistant.agents.llm_factory import make_llm
 from financial_assistant.agents.state import AgentState
-from financial_assistant.agents.ux_agent.prompts import SYNTHESIS_SYSTEM_PROMPT, SYNTHESIS_USER_TEMPLATE
+from financial_assistant.agents.ux_agent.prompts import (
+    SYNTHESIS_USER_TEMPLATE,
+    get_synthesis_system_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +49,22 @@ def make_ux_node(  # type: ignore[no-untyped-def]
             data_summary=data_summary,
         )
 
-        messages = [SystemMessage(content=SYNTHESIS_SYSTEM_PROMPT)] + history + [HumanMessage(content=current_prompt)]
+        messages = (
+            [SystemMessage(content=get_synthesis_system_prompt())]
+            + history
+            + [HumanMessage(content=current_prompt)]
+        )
 
         try:
             response = await llm.ainvoke(messages)
-            # Guardar la respuesta en el historial para turnos futuros
+            # Guardar la respuesta en el historial para turnos futuros.
+            # NO retornamos "errors" porque no producimos errores nuevos —
+            # retornarlo (incluso vacío) pisa los errores previos del turno
+            # (ej. data_fetcher), y los necesitamos preservados para que el
+            # LLM los use como guía operativa.
             return {
                 "final_response": response.content,
                 "messages": [AIMessage(content=response.content)],
-                "errors": [],
             }
         except Exception as exc:
             logger.error("UX agent LLM call failed: %s", exc)
@@ -196,5 +206,18 @@ def _build_data_summary(state: AgentState) -> str:
 
     if not parts:
         parts.append("No specific financial data available for this query.")
+
+    pending = state.get("pending_positions") or []
+    if pending:
+        parts.append("PENDING POSITIONS (esperando confirmación de precio):")
+        for p in pending:
+            parts.append(
+                f"  {p['ticker']}: {p['quantity']} unidades | "
+                f"fecha: {p['purchase_date']} | "
+                f"precio histórico sugerido: ${p['suggested_price']:.2f}"
+            )
+
+    if state.get("intents") == ["data_fetch"] and state.get("pending_positions") == []:
+        parts.append("POSITIONS REGISTERED: las posiciones pendientes fueron registradas exitosamente.")
 
     return "\n".join(parts)

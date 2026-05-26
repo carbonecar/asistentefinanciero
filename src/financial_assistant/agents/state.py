@@ -1,5 +1,4 @@
-import operator
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Required
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -48,11 +47,11 @@ ROUTING_OVERRIDES: dict[str, str] = {
 }
 
 
-class AgentState(TypedDict):
-    # ---- Input ----
-    user_id: int
-    user_message: str
-    messages: Annotated[list[BaseMessage], add_messages]
+class AgentState(TypedDict, total=False):
+    # ---- Input (obligatorias en cada turno) ----
+    user_id: Required[int]
+    user_message: Required[str]
+    messages: Required[Annotated[list[BaseMessage], add_messages]]
 
     # ---- Routing (set by supervisor) ----
     intents: list[Intent]
@@ -61,8 +60,9 @@ class AgentState(TypedDict):
     use_sentiment: bool
     positions: list[dict[str, Any]]  # [{ticker, quantity, avg_cost_usd, asset_type}]
     optimization_strategy: str  # "max_sharpe" | "min_volatility"
+    pending_positions: list[dict[str, Any]] | None  # posiciones esperando confirmación — se preserva entre turnos
 
-    # ---- Agent outputs (accumulated) ----
+    # ---- Agent outputs (accumulated within a turn) ----
     market_data_result: dict[str, Any] | None
     audit_report: AuditReport | None
     quant_result: QuantResult | None
@@ -72,4 +72,4 @@ class AgentState(TypedDict):
 
     # ---- Final ----
     final_response: str | None
-    errors: Annotated[list[str], operator.add]
+    errors: list[str]
