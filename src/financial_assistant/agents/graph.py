@@ -244,7 +244,7 @@ def build_graph(  # pylint: disable=too-many-arguments,too-many-positional-argum
     )  # nodo de enrutamiento sin procesamiento, solo para decidir el siguiente paso después de data_fetcher
     workflow.add_node(Node.SENTIMENT_ROUTER, lambda _: {})
     workflow.set_entry_point(Node.SUPERVISOR)
-    
+
     _specialist_map: dict[Hashable, str] = {
         Node.DATA_FETCHER: Node.DATA_FETCHER,
         Node.AUDITOR: Node.AUDITOR,

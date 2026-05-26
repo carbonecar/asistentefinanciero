@@ -33,7 +33,7 @@ class PositionORM(Base):
     avg_cost_usd: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False, default="USD")
     purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    
+
     portfolio: Mapped["PortfolioORM"] = relationship(back_populates="positions")
 
 

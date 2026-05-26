@@ -44,9 +44,7 @@ class NewsService:
             # user sees fresh sentiment + headlines (not just bare titles).
             cached_tickers = [t for t in query.tickers if cached.get(t)]
             recent_from = today - timedelta(days=self._HEADLINE_LOOKBACK_DAYS)
-            recent_sentiment, cached_headlines = await self._analyze_range(
-                cached_tickers, recent_from, today
-            )
+            recent_sentiment, cached_headlines = await self._analyze_range(cached_tickers, recent_from, today)
             # Merge: recent days override the DB rows for the same dates
             for ticker, recent_days in recent_sentiment.items():
                 if ticker in cached and recent_days:
@@ -62,9 +60,7 @@ class NewsService:
 
         return await self._analyze_range(query.tickers, from_date, today)
 
-    async def analyze_historical_sentiment(
-        self, query: HistoricalNewsQuery
-    ) -> dict[str, list[DailySentiment]]:
+    async def analyze_historical_sentiment(self, query: HistoricalNewsQuery) -> dict[str, list[DailySentiment]]:
         """Same as analyze_sentiment but with an explicit lookback window (no headlines)."""
         today = date.today()
         from_date = today - timedelta(days=query.lookback_days)
@@ -90,9 +86,7 @@ class NewsService:
             article_sentiments: list[dict[str, object]] = []
             for article in top_articles:
                 sent = self._sentiment.score(ticker, [article])
-                article_sentiments.append(
-                    {"title": article.title, "label": sent.label, "score": sent.score}
-                )
+                article_sentiments.append({"title": article.title, "label": sent.label, "score": sent.score})
             headlines[ticker] = article_sentiments
 
             by_day: dict[date, list[NewsArticle]] = defaultdict(list)

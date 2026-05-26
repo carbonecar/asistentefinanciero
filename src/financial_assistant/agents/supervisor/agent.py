@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from financial_assistant.agents.llm_factory import make_llm
 from financial_assistant.agents.state import VALID_INTENTS, AgentState
-from financial_assistant.agents.supervisor.prompts import CLASSIFY_INTENT_SCHEMA, FALLBACK_PROMPT, SYSTEM_PROMPT
+from financial_assistant.agents.supervisor.prompts import CLASSIFY_INTENT_SCHEMA, FALLBACK_PROMPT, get_system_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def make_supervisor_node(  # type: ignore[no-untyped-def]
                 "positions": [],
             }
 
-        messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
+        messages = [SystemMessage(content=get_system_prompt())] + state["messages"]
         try:
             response = await llm_with_tools.ainvoke(messages)
             tool_calls = getattr(response, "tool_calls", [])
