@@ -5,7 +5,6 @@ Wires together all infrastructure adapters and application services.
 
 from financial_assistant.agents.graph import build_graph
 from financial_assistant.agents.quant.monte_carlo import MonteCarloSimulator
-from financial_assistant.agents.quant.optimizer import PortfolioOptimizer
 from financial_assistant.application.services.audit_service import AuditService
 from financial_assistant.application.services.market_data_service import MarketDataService
 from financial_assistant.application.services.news_service import NewsService
@@ -14,6 +13,7 @@ from financial_assistant.application.services.quant_service import OptimizerProt
 from financial_assistant.config.settings import Settings
 from financial_assistant.domain.models.analysis import OptimizedWeights, SimulationResult
 from financial_assistant.domain.models.market_data import OHLCV
+from financial_assistant.domain.services.optimizer import MaxSharpeStrategy, OptimizationStrategy, PortfolioOptimizer
 from financial_assistant.infrastructure.db.engine import build_engine, build_session_factory
 from financial_assistant.infrastructure.db.repositories.market_data_repository import (
     PostgresMarketDataRepository,
@@ -95,10 +95,13 @@ class Container:
         class _OptimizerAdapter(OptimizerProtocol):
             """Adapta PortfolioOptimizer al protocolo OptimizerProtocol de QuantService."""
 
-            def minimum_variance(
-                self, ohlcv_by_ticker: dict[str, list[OHLCV]], sentiment_map: dict[str, float]
+            def optimize(
+                self,
+                ohlcv_by_ticker: dict[str, list[OHLCV]],
+                sentiment_map: dict[str, float],
+                strategy: OptimizationStrategy = MaxSharpeStrategy(),
             ) -> OptimizedWeights | None:
-                return optimizer.minimum_variance(ohlcv_by_ticker, sentiment_map)
+                return optimizer.optimize(ohlcv_by_ticker, sentiment_map, strategy)
 
         class _SimulatorAdapter(SimulatorProtocol):
             """Adapta MonteCarloSimulator al protocolo SimulatorProtocol de QuantService."""

@@ -11,7 +11,7 @@ Asistente financiero multi-agente para inversores minoristas argentinos. Combina
 | Intención | Qué hace |
 |---|---|
 | **Auditar cartera** | Performance histórica vs benchmark S&P 500 |
-| **Optimizar portfolio** | `max_sharpe()` con y sin ajuste de sentimiento (comparación paralela) + Monte Carlo GBM |
+| **Optimizar portfolio** | Tres estrategias seleccionables por el usuario vía lenguaje natural: `max_sharpe` (con/sin sentimiento en μ), `min_volatility`, `min_vol_sentiment` (escalado de Σ) + Monte Carlo GBM |
 | **Noticias** | Fetch + scoring de sentimiento con FinBERT o TextBlob |
 | **Agregar posiciones** | Descarga y persiste datos de mercado (yfinance) |
 | **Consulta general** | Respuesta libre con tipo de cambio USD/ARS actualizado |
@@ -156,9 +156,12 @@ sentiment_router  ──(conditional)──→ quant | fx_fetcher
 ## Decisiones de diseño
 
 - **Async everywhere**: aiogram + SQLAlchemy async + asyncio executor para libs sync (yfinance, newsapi)
-- **Ajuste por sentimiento**: `E[R_adj] = E[R_hist] × (1 + λ × s)` donde `s ∈ [-1, 1]` y `λ` es `SENTIMENT_LAMBDA`
-- **Optimización de cartera**: PyPortfolioOpt `max_sharpe()` en ambos casos — mismo objetivo, distinta entrada μ. Sin sentimiento usa μ histórico puro; con sentimiento usa μ ajustado. Permite comparar el impacto del sentimiento a igual nivel de riesgo.
-- **Comparación paralela**: cuando `use_sentiment=True`, el grafo corre `quant` (con sentimiento) y `quant_no_sentiment` (sin sentimiento) en paralelo y expone ambos resultados al `ux_agent`.
+- **Optimización de cartera**: tres estrategias OCP (`OptimizationStrategy` ABC en `domain/services/optimizer.py`):
+  - `MaxSharpeStrategy` — maximiza el ratio de Sharpe; ajusta μ con sentimiento: `μ_adj[i] = μ[i] × (1 + λ × s[i])`
+  - `MinVolatilityStrategy` — minimiza la varianza del portfolio; ignora sentimiento
+  - `MinVolatilitySentimentStrategy` — minimiza varianza escalando la diagonal de Σ: `Σ̃[i,i] = Σ[i,i] × (1 − λ × s[i])`
+  - Ver detalle completo de fórmulas en [doc/calculo_cartera_optima.md](doc/calculo_cartera_optima.md)
+- **Selección de estrategia por LLM**: el supervisor extrae `optimization_strategy` del mensaje del usuario via function calling; el nodo `quant` lo mapea a la instancia de estrategia correspondiente
 - **Monte Carlo**: GBM con `mu`/`sigma` ponderados por peso de cada ticker sobre `MONTE_CARLO_HORIZON_DAYS` días
 - **Upserts en DB**: `ON CONFLICT DO UPDATE` para registros OHLCV (ingestión idempotente)
 - **Checkpointing**: `MemorySaver` en desarrollo. Para producción, reemplazar por Redis checkpointer.

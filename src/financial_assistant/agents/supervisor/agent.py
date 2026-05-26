@@ -18,20 +18,33 @@ _DEFAULT_RESULT: dict = {  # type: ignore[type-arg]
     "period": "1y",
     "use_sentiment": False,
     "positions": [],
+    "optimization_strategy": "max_sharpe",
 }
+
+_VALID_STRATEGIES = frozenset({"max_sharpe", "min_volatility", "min_vol_sentiment"})
 
 
 def _build_result(args: dict) -> dict:  # type: ignore[type-arg]
     raw = args.get("intents", ["general"])
     intents = [i for i in raw if i in VALID_INTENTS] or ["general"]
     positions = args.get("positions") or []
-    logger.info("[Supervisor] intents=%s tickers=%s positions=%s", intents, args.get("tickers", []), positions)
+    strategy = args.get("optimization_strategy", "max_sharpe")
+    if strategy not in _VALID_STRATEGIES:
+        strategy = "max_sharpe"
+    logger.info(
+        "[Supervisor] intents=%s tickers=%s positions=%s strategy=%s",
+        intents,
+        args.get("tickers", []),
+        positions,
+        strategy,
+    )
     return {
         "intents": intents,
         "active_tickers": [t.upper() for t in args.get("tickers", [])],
         "period": args.get("period", "1y"),
         "use_sentiment": args.get("use_sentiment", False),
         "positions": positions,
+        "optimization_strategy": strategy,
     }
 
 

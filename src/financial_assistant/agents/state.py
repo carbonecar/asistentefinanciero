@@ -60,6 +60,7 @@ class AgentState(TypedDict):
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool
     positions: list[dict[str, Any]]  # [{ticker, quantity, avg_cost_usd, asset_type}]
+    optimization_strategy: str  # "max_sharpe" | "min_volatility"
 
     # ---- Agent outputs (accumulated) ----
     market_data_result: dict[str, Any] | None

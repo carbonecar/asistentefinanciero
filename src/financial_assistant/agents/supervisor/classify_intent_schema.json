@@ -8,14 +8,23 @@
         "type": "array",
         "items": {
           "type": "string",
-          "enum": ["audit", "optimize", "news", "data_fetch", "general", "unsupported"]
+          "enum": [
+            "audit",
+            "optimize",
+            "news",
+            "data_fetch",
+            "general",
+            "unsupported"
+          ]
         },
         "description": "Una o más intenciones clasificadas del usuario",
         "minItems": 1
       },
       "tickers": {
         "type": "array",
-        "items": {"type": "string"},
+        "items": {
+          "type": "string"
+        },
         "description": "Lista de tickers de acciones/ETFs mencionados (en mayúsculas, ej: AAPL, SPY)"
       },
       "period": {
@@ -34,7 +43,10 @@
         "items": {
           "type": "object",
           "properties": {
-            "ticker": {"type": "string", "description": "Símbolo del ticker en mayúsculas"},
+            "ticker": {
+              "type": "string",
+              "description": "Símbolo del ticker en mayúsculas"
+            },
             "quantity": {
               "type": "number",
               "description": "Cantidad de unidades. Si el usuario menciona un monto total sin cantidad, usar quantity=1 y avg_cost_usd=monto_total"
@@ -45,7 +57,12 @@
             },
             "asset_type": {
               "type": "string",
-              "enum": ["stock", "etf", "bond_on", "crypto"],
+              "enum": [
+                "stock",
+                "etf",
+                "bond_on",
+                "crypto"
+              ],
               "description": "Tipo de activo"
             },
             "purchase_date": {
@@ -53,11 +70,32 @@
               "description": "Fecha de compra en formato ISO 8601 (YYYY-MM-DD). Solo incluir si el usuario la menciona explícitamente. Si no la menciona, omitir el campo."
             }
           },
-          "required": ["ticker", "quantity", "avg_cost_usd", "asset_type"]
+          "required": [
+            "ticker",
+            "quantity",
+            "avg_cost_usd",
+            "asset_type"
+          ]
         },
         "default": []
+      },
+      "optimization_strategy": {
+        "type": "string",
+        "enum": [
+          "max_sharpe",
+          "min_volatility",
+          "min_vol_sentiment"
+        ],
+        "description": "Estrategia de optimización solicitada. 'max_sharpe' maximiza el ratio de Sharpe (ajusta retornos por sentimiento si use_sentiment=true); 'min_volatility' minimiza la volatilidad (ignora sentimiento); 'min_vol_sentiment' minimiza la volatilidad escalando la covarianza por sentimiento. Omitir si el usuario no especifica.",
+        "default": "max_sharpe"
       }
     },
-    "required": ["intents", "tickers", "period", "use_sentiment", "positions"]
+    "required": [
+      "intents",
+      "tickers",
+      "period",
+      "use_sentiment",
+      "positions"
+    ]
   }
 }

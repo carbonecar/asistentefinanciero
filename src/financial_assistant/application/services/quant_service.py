@@ -6,11 +6,15 @@ from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.domain.models.news import DailySentiment
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
 from financial_assistant.domain.ports.repositories import IMarketDataRepository, IPortfolioRepository
+from financial_assistant.domain.services.optimizer import MaxSharpeStrategy, OptimizationStrategy
 
 
 class OptimizerProtocol(ABC):
-    def minimum_variance(
-        self, ohlcv_by_ticker: dict[str, list[OHLCV]], sentiment_map: dict[str, float]
+    def optimize(
+        self,
+        ohlcv_by_ticker: dict[str, list[OHLCV]],
+        sentiment_map: dict[str, float],
+        strategy: OptimizationStrategy = MaxSharpeStrategy(),
     ) -> OptimizedWeights | None:
         raise NotImplementedError
 
@@ -41,6 +45,7 @@ class QuantService:
         self,
         query: OptimizePortfolioQuery,
         sentiment_results: dict[str, list[DailySentiment]] | None = None,
+        strategy: OptimizationStrategy = MaxSharpeStrategy(),
     ) -> QuantResult | None:
         portfolio = await self._portfolio_repo.get_by_user_id(query.user_id)
         if not portfolio or portfolio.is_empty():
@@ -59,9 +64,10 @@ class QuantService:
             else {}
         )
 
-        weights = self._optimizer.minimum_variance(
+        weights = self._optimizer.optimize(
             ohlcv_by_ticker,
             sentiment_map if query.use_sentiment else {},
+            strategy=strategy,
         )
 
         # Pesos actuales por valor de mercado

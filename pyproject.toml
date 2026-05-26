@@ -55,6 +55,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+exclude = ["notebooks/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
@@ -74,6 +75,7 @@ ignore_missing_imports = true
 mypy_path = "src"
 explicit_package_bases = true
 plugins = ["pydantic.mypy"]
+exclude = ["notebooks/"]
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",

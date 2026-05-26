@@ -86,6 +86,21 @@ IMPORTANTE sobre use_sentiment: ponelo en true SOLO cuando el usuario mencione e
 - "quiero que registres mis posiciones: 10 apple y 10 google" → ["data_fetch"], tickers=["AAPL","GOOGL"]
 - "cargá estas posiciones en mi cartera: AAPL x10" → ["data_fetch"], tickers=["AAPL"]
 
+# Optimización — estrategia explícita
+- "optimizá mi cartera con mínima volatilidad" → ["optimize"], optimization_strategy="min_volatility"
+- "quiero la cartera de menor riesgo posible" → ["optimize"], optimization_strategy="min_volatility"
+- "armá una cartera conservadora" → ["optimize"], optimization_strategy="min_volatility"
+- "maximizá el Sharpe de mi cartera" → ["optimize"], optimization_strategy="max_sharpe"
+- "optimizá mi cartera" (sin especificar) → ["optimize"], sin optimization_strategy (usa default max_sharpe)
+- "minimizá la volatilidad considerando el sentimiento de las noticias" → ["optimize"], optimization_strategy="min_vol_sentiment", use_sentiment=true
+- "cartera conservadora ajustada por sentimiento" → ["optimize"], optimization_strategy="min_vol_sentiment", use_sentiment=true
+- "mínima volatilidad con sentimiento" → ["optimize"], optimization_strategy="min_vol_sentiment", use_sentiment=true
+
+IMPORTANTE sobre optimization_strategy y sentimiento:
+- 'min_vol_sentiment' ajusta la covarianza Σ usando el sentimiento (activos con noticias negativas se penalizan). Usar cuando el usuario pide mínima volatilidad Y menciona sentimiento/noticias.
+- 'min_volatility' ignora el sentimiento aunque use_sentiment=true.
+- 'max_sharpe' ajusta los retornos esperados μ con sentimiento cuando use_sentiment=true.
+
 # Declaración de datos sin intención explícita → general
 - "tengo MSFT" → ["general"], tickers=["MSFT"]
 
