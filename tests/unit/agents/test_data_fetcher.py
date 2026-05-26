@@ -338,3 +338,131 @@ class TestYFinanceGateway:
 
         assert gw_default._timeout == _DEFAULT_TIMEOUT_SECONDS
         assert gw_custom._timeout == 10.0
+
+
+class TestPurchaseDateValidation:
+    """Tests for the defensive purchase_date validation against LLM hallucination."""
+
+    @pytest.mark.asyncio
+    async def test_future_purchase_date_is_rejected(self):
+        """Si el LLM aluciné una fecha futura, no debe persistirse la posición."""
+        from datetime import timedelta
+
+        svc = _make_service({"AAPL": [_make_ohlcv("AAPL", 150.0)]})
+        portfolio_svc = MagicMock()
+        portfolio_svc.add_position = AsyncMock()
+        market_svc = svc
+        market_svc.get_price_at_date = AsyncMock(return_value=190.0)
+
+        node = make_data_fetcher_node(market_svc, portfolio_svc)
+        future = (date.today() + timedelta(days=30)).isoformat()
+        state = _make_state(
+            active_tickers=["AAPL"],
+            positions=[
+                {
+                    "ticker": "AAPL",
+                    "quantity": 10,
+                    "avg_cost_usd": 0,
+                    "asset_type": "stock",
+                    "purchase_date": future,
+                }
+            ],
+        )
+
+        result = await node(state)
+
+        portfolio_svc.add_position.assert_not_called()
+        assert result["pending_positions"] == []
+        assert result["errors"]
+        assert "fecha futura" in result["errors"][0]
+
+    @pytest.mark.asyncio
+    async def test_too_old_purchase_date_is_rejected(self):
+        """Fechas >30 años hacia atrás se rechazan (probable alucinación)."""
+        svc = _make_service({"AAPL": [_make_ohlcv("AAPL", 150.0)]})
+        portfolio_svc = MagicMock()
+        portfolio_svc.add_position = AsyncMock()
+        market_svc = svc
+        market_svc.get_price_at_date = AsyncMock(return_value=10.0)
+
+        node = make_data_fetcher_node(market_svc, portfolio_svc)
+        state = _make_state(
+            active_tickers=["AAPL"],
+            positions=[
+                {
+                    "ticker": "AAPL",
+                    "quantity": 10,
+                    "avg_cost_usd": 0,
+                    "asset_type": "stock",
+                    "purchase_date": "1950-01-01",
+                }
+            ],
+        )
+
+        result = await node(state)
+
+        portfolio_svc.add_position.assert_not_called()
+        assert "fecha demasiado antigua" in result["errors"][0]
+
+    @pytest.mark.asyncio
+    async def test_valid_purchase_date_passes_through(self):
+        """Una fecha razonable no debe disparar la validación defensiva."""
+        from datetime import timedelta
+
+        svc = _make_service({"AAPL": [_make_ohlcv("AAPL", 150.0)]})
+        portfolio_svc = MagicMock()
+        portfolio_svc.add_position = AsyncMock()
+        market_svc = svc
+        market_svc.get_price_at_date = AsyncMock(return_value=190.0)
+
+        node = make_data_fetcher_node(market_svc, portfolio_svc)
+        valid_date = (date.today() - timedelta(days=60)).isoformat()
+        state = _make_state(
+            active_tickers=["AAPL"],
+            positions=[
+                {
+                    "ticker": "AAPL",
+                    "quantity": 10,
+                    "avg_cost_usd": 0,
+                    "asset_type": "stock",
+                    "purchase_date": valid_date,
+                }
+            ],
+        )
+
+        result = await node(state)
+
+        # No error de fecha; debería haber pasado a pending_positions
+        assert not any("fecha" in (e or "") for e in result["errors"])
+        assert len(result["pending_positions"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_pending_position_with_future_date_is_rejected_on_confirmation(self):
+        """En la rama de confirmación directa, fechas futuras también se rechazan."""
+        from datetime import timedelta
+
+        svc = _make_service({})
+        portfolio_svc = MagicMock()
+        portfolio_svc.add_position = AsyncMock()
+
+        node = make_data_fetcher_node(svc, portfolio_svc)
+        future = (date.today() + timedelta(days=10)).isoformat()
+        state = _make_state(
+            active_tickers=[],
+            positions=[],
+            pending_positions=[
+                {
+                    "ticker": "AAPL",
+                    "quantity": 10,
+                    "asset_type": "stock",
+                    "purchase_date": future,
+                    "suggested_price": 190.0,
+                }
+            ],
+        )
+
+        result = await node(state)
+
+        portfolio_svc.add_position.assert_not_called()
+        assert result["errors"]
+        assert "fecha futura" in result["errors"][0]

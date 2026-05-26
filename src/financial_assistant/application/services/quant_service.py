@@ -50,11 +50,7 @@ class QuantService:
             ohlcv_by_ticker[ticker] = records
 
         sentiment_map = (
-            {
-                ticker: sum(d.score for d in daily) / len(daily)
-                for ticker, daily in sentiment_results.items()
-                if daily
-            }
+            {ticker: sum(d.score for d in daily) / len(daily) for ticker, daily in sentiment_results.items() if daily}
             if sentiment_results
             else {}
         )

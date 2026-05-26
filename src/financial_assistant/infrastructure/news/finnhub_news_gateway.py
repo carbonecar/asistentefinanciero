@@ -72,9 +72,7 @@ class FinnhubNewsGateway(INewsGateway, IHistoricalNewsGateway):
         loop = asyncio.get_running_loop()
         all_articles: list[NewsArticle] = []
         for chunk_from, chunk_to in chunks:
-            batch = await loop.run_in_executor(
-                None, partial(self._fetch_sync, ticker, chunk_from, chunk_to)
-            )
+            batch = await loop.run_in_executor(None, partial(self._fetch_sync, ticker, chunk_from, chunk_to))
             all_articles.extend(batch)
 
         # Deduplicate by URL and filter out articles outside the requested range
