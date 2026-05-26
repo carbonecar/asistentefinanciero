@@ -20,6 +20,8 @@ def make_quant_node(
         try:
             query = OptimizePortfolioQuery(user_id=user_id, use_sentiment=use_sentiment)
             result = await quant_service.optimize(query, sentiment_results=news_results)
+            has_weights = result is not None and result.optimized_weights is not None
+            logger.info("Quant result for user %s: result=%s has_weights=%s", user_id, result is not None, has_weights)
             return {result_key: result, "errors": []}
         except Exception as exc:
             logger.error("Quant failed for user %s: %s", user_id, exc)

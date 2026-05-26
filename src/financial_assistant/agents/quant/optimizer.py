@@ -1,8 +1,12 @@
+import logging
+
 import pandas as pd
 from pypfopt import EfficientFrontier, expected_returns, risk_models
 
 from financial_assistant.domain.models.analysis import OptimizedWeights
 from financial_assistant.domain.models.market_data import OHLCV
+
+logger = logging.getLogger(__name__)
 
 
 class PortfolioOptimizer:
@@ -25,10 +29,9 @@ class PortfolioOptimizer:
 
         S = risk_models.sample_cov(prices_df)  # pylint: disable=invalid-name
         ef = EfficientFrontier(mu, S, weight_bounds=(0, 1))
-        ef.add_objective(lambda w: 1e-3 * (w**2).sum())  # L2 regularization
 
         try:
-            ef.min_volatility()
+            ef.max_sharpe(risk_free_rate=self._risk_free_rate)
             weights = ef.clean_weights()
             perf = ef.portfolio_performance(verbose=False, risk_free_rate=self._risk_free_rate)
             return OptimizedWeights(
@@ -38,7 +41,8 @@ class PortfolioOptimizer:
                 sharpe_ratio=round(float(perf[2]), 4),
                 expected_returns_per_ticker={t: round(float(mu[t]), 4) for t in mu.index},
             )
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("PortfolioOptimizer failed (sentiment=%s): %s", bool(sentiment_map), exc, exc_info=True)
             return None
 
     def _apply_sentiment(self, mu: "pd.Series", sentiment_map: dict[str, float]) -> "pd.Series":

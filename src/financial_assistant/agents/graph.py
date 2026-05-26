@@ -129,18 +129,25 @@ def route_by_intent(state: AgentState) -> list[str]:
                 if dest not in seen:
                     seen.add(dest)
                     destinations.append(dest)
+        # audit siempre incluye quant para mostrar rendimiento esperado y volatilidad
+        if Node.AUDITOR in destinations and Node.QUANT not in destinations and Node.NEWS_SCOUT not in destinations:
+            if use_sentiment:
+                destinations.append(Node.NEWS_SCOUT)  # NEWS_SCOUT → SENTIMENT_ROUTER → QUANT
+            else:
+                destinations.append(Node.QUANT)
     logger.info("[GRAPH] supervisor → %s (intents=%s, tickers=%s)", destinations, intents, state.get("active_tickers"))
     return destinations
 
 
 def route_after_news_scout(state: AgentState) -> str:
     """
-    Routing desde sentiment_router: si optimize está en los intents y
+    Routing desde sentiment_router: si optimize o audit está en los intents y
     use_sentiment=True, deriva a quant (que ya puede leer news_results).
     Caso contrario, va directo a fx_fetcher.
     """
     intents = state.get("intents") or []
-    if "optimize" in intents and state.get("use_sentiment", False):
+    use_sentiment = state.get("use_sentiment", False)
+    if use_sentiment and ("optimize" in intents or "audit" in intents):
         return Node.QUANT
     return Node.FX_FETCHER
 
@@ -177,6 +184,12 @@ def post_fetch_route(state: AgentState) -> list[str]:
         if dest not in seen:
             seen.add(dest)
             remaining.append(dest)
+    # audit siempre incluye quant para mostrar rendimiento esperado y volatilidad
+    if Node.AUDITOR in remaining and Node.QUANT not in remaining and Node.NEWS_SCOUT not in remaining:
+        if use_sentiment:
+            remaining.append(Node.NEWS_SCOUT)
+        else:
+            remaining.append(Node.QUANT)
     destinations = remaining or [Node.FX_FETCHER]
     logger.info("[GRAPH] post_fetch_router → %s", destinations)
     return destinations

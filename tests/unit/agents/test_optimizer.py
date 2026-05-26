@@ -100,7 +100,7 @@ class TestEdgeCases:
 
 
 class TestSentimentAdjustment:
-    def test_positive_sentiment_increases_expected_return(self, optimizer, two_asset_input):
+    def test_sentiment_adjusts_expected_return(self, optimizer, two_asset_input):
         base = optimizer.minimum_variance(two_asset_input)
         adjusted = optimizer.minimum_variance(two_asset_input, sentiment_map={"AAPL": 1.0})
         assert base is not None and adjusted is not None
@@ -112,12 +112,25 @@ class TestSentimentAdjustment:
         assert base is not None and adjusted is not None
         assert adjusted.expected_returns_per_ticker["AAPL"] < base.expected_returns_per_ticker["AAPL"]
 
+    def test_sentiment_changes_weights(self, optimizer, two_asset_input):
+        # same objective (max_sharpe), different μ input → different weights
+        base = optimizer.minimum_variance(two_asset_input)
+        adjusted = optimizer.minimum_variance(two_asset_input, sentiment_map={"AAPL": 1.0})
+        assert base is not None and adjusted is not None
+        assert base.weights != adjusted.weights
+
+    def test_sentiment_weights_still_valid(self, optimizer, two_asset_input):
+        result = optimizer.minimum_variance(two_asset_input, sentiment_map={"AAPL": 1.0})
+        assert result is not None
+        assert abs(sum(result.weights.values()) - 1.0) < 1e-4
+        assert all(0.0 <= w <= 1.0 for w in result.weights.values())
+
     def test_unknown_ticker_in_sentiment_map_is_ignored(self, optimizer, two_asset_input):
         result = optimizer.minimum_variance(two_asset_input, sentiment_map={"UNKNOWN": 0.9})
         assert result is not None
         assert abs(sum(result.weights.values()) - 1.0) < 1e-4
 
-    def test_zero_sentiment_has_no_effect(self, optimizer, two_asset_input):
+    def test_zero_sentiment_has_no_effect_on_mu(self, optimizer, two_asset_input):
         base = optimizer.minimum_variance(two_asset_input)
         adjusted = optimizer.minimum_variance(two_asset_input, sentiment_map={"AAPL": 0.0})
         assert base is not None and adjusted is not None

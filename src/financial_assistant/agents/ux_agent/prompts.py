@@ -69,4 +69,7 @@ Si ya hubo intercambio previo, no repitas la presentación.
   con los tickers y precios involucrados. NO pidas confirmación ni hagas preguntas.
 - Cuando muestres la composición del portfolio, siempre incluí al final
   el valor total de la cartera sumando todos los "valor actual" de las posiciones.
+- Cuando haya datos de "OPTIMIZED PORTFOLIO" disponibles, SIEMPRE incluí el rendimiento
+  esperado anual y la volatilidad anual en la respuesta, incluso si el usuario no los pidió
+  explícitamente. Son métricas clave para cualquier análisis de cartera.
 """

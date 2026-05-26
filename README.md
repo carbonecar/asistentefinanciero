@@ -11,8 +11,8 @@ Asistente financiero multi-agente para inversores minoristas argentinos. Combina
 | Intención | Qué hace |
 |---|---|
 | **Auditar cartera** | Performance histórica vs benchmark S&P 500 |
-| **Optimizar portfolio** | PyPortfolioOpt + simulación Monte Carlo GBM |
-| **Noticias** | Fetch + scoring de sentimiento con TextBlob |
+| **Optimizar portfolio** | `max_sharpe()` con y sin ajuste de sentimiento (comparación paralela) + Monte Carlo GBM |
+| **Noticias** | Fetch + scoring de sentimiento con FinBERT o TextBlob |
 | **Agregar posiciones** | Descarga y persiste datos de mercado (yfinance) |
 | **Consulta general** | Respuesta libre con tipo de cambio USD/ARS actualizado |
 
@@ -79,7 +79,7 @@ infrastructure/  ← Implementaciones de los adapters.
   db/            ← SQLAlchemy async + repositorios (PostgreSQL)
   market/        ← YFinanceGateway (yfinance sync en thread executor)
   news/          ← NewsAPIGateway
-  nlp/           ← TextBlobSentimentAnalyzer
+  nlp/           ← TextBlobSentimentAnalyzer + FinBERTSentimentAnalyzer
   container.py   ← Inyección de dependencias manual
 
 agents/          ← Orquestación LangGraph. Llama a application services.
@@ -113,9 +113,11 @@ Telegram → message_handler
          → graph.ainvoke(state, config={"thread_id": user_id})
          → supervisor (clasificación de intención)
          → [fan-out condicional]
-              "audit"       → auditor      ─┐
-              "optimize"    → quant         ├─→ fx_fetcher → ux_agent → respuesta
-              "news"        → news_scout   ─┘
+              "audit"       → auditor ──────────────────────────────────┐
+                            → quant (rendimiento esperado + volatilidad) ┤
+              "optimize"    → news_scout → sentiment_router → quant ────┤─→ fx_fetcher → ux_agent → respuesta
+                            → quant_no_sentiment (comparación) ─────────┘
+              "news"        → news_scout → sentiment_router → fx_fetcher → ux_agent
               "data_fetch"  → data_fetcher → post_fetch_router → (intenciones pendientes)
               "general"     → fx_fetcher → ux_agent
               "unsupported" → END (respuesta fija)
@@ -129,9 +131,10 @@ Telegram → message_handler
 | `data_fetcher` | Servicio | Descarga OHLCV de yfinance y persiste en DB |
 | `post_fetch_router` | Router | Despacha intenciones pendientes post data_fetch |
 | `auditor` | Servicio | Calcula performance histórica vs S&P 500 |
-| `quant` | Servicio | Optimización de cartera + simulación Monte Carlo |
-| `news_scout` | Servicio | Fetching de noticias + análisis de sentimiento |
-| `sentiment_router` | Router | Decide si `quant` usa sentimiento o va directo a `fx_fetcher` |
+| `quant` | Servicio | `max_sharpe()` con μ ajustado por sentimiento + Monte Carlo |
+| `quant_no_sentiment` | Servicio | `max_sharpe()` con μ histórico puro (sin ajuste) para comparación |
+| `news_scout` | Servicio | Fetching de noticias + análisis de sentimiento (FinBERT / TextBlob) |
+| `sentiment_router` | Router | Decide si derivar a `quant` (cuando hay sentimiento activo) o a `fx_fetcher` |
 | `fx_fetcher` | Gateway | Obtiene tipo de cambio USD/ARS actualizado |
 | `ux_agent` | LLM | Sintetiza los resultados en una respuesta en español |
 | `unsupported` | Terminal | Respuesta fija para intenciones fuera de scope |
@@ -143,9 +146,9 @@ Telegram → message_handler
 ### Edges condicionales
 
 ```
-supervisor      ──(conditional)──→ data_fetcher | auditor | quant | news_scout | fx_fetcher | unsupported
-post_fetch_router ─(conditional)──→ auditor | quant | news_scout | fx_fetcher
-sentiment_router ──(conditional)──→ quant | fx_fetcher
+supervisor        ──(conditional)──→ data_fetcher | auditor | quant | quant_no_sentiment | news_scout | fx_fetcher | unsupported
+post_fetch_router ──(conditional)──→ auditor | quant | quant_no_sentiment | news_scout | fx_fetcher
+sentiment_router  ──(conditional)──→ quant | fx_fetcher
 ```
 
 ---
@@ -154,7 +157,8 @@ sentiment_router ──(conditional)──→ quant | fx_fetcher
 
 - **Async everywhere**: aiogram + SQLAlchemy async + asyncio executor para libs sync (yfinance, newsapi)
 - **Ajuste por sentimiento**: `E[R_adj] = E[R_hist] × (1 + λ × s)` donde `s ∈ [-1, 1]` y `λ` es `SENTIMENT_LAMBDA`
-- **Optimización de cartera**: PyPortfolioOpt `min_volatility()` con regularización L2 (evita soluciones en esquinas)
+- **Optimización de cartera**: PyPortfolioOpt `max_sharpe()` en ambos casos — mismo objetivo, distinta entrada μ. Sin sentimiento usa μ histórico puro; con sentimiento usa μ ajustado. Permite comparar el impacto del sentimiento a igual nivel de riesgo.
+- **Comparación paralela**: cuando `use_sentiment=True`, el grafo corre `quant` (con sentimiento) y `quant_no_sentiment` (sin sentimiento) en paralelo y expone ambos resultados al `ux_agent`.
 - **Monte Carlo**: GBM con `mu`/`sigma` ponderados por peso de cada ticker sobre `MONTE_CARLO_HORIZON_DAYS` días
 - **Upserts en DB**: `ON CONFLICT DO UPDATE` para registros OHLCV (ingestión idempotente)
 - **Checkpointing**: `MemorySaver` en desarrollo. Para producción, reemplazar por Redis checkpointer.

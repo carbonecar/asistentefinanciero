@@ -110,7 +110,9 @@ class Container:
                     return None
                 return simulator.simulate(weights, ohlcv_by_ticker, initial_value)
 
-        quant_service = QuantService(portfolio_repo, market_gateway, _OptimizerAdapter(), _SimulatorAdapter())
+        quant_service = QuantService(
+            portfolio_repo, market_gateway, _OptimizerAdapter(), _SimulatorAdapter(), market_data_repo
+        )
         news_service = NewsService(news_gateway, FinBERTSentimentAnalyzer(), sentiment_history_repo)
         fx_gateway = DolarApiGateway()
 

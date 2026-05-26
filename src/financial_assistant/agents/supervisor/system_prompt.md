@@ -60,6 +60,14 @@ EJEMPLOS:
 # Optimización
 - "optimizá mi cartera" → ["optimize"]
 - "quiero rebalancear" → ["optimize"]
+- "dame la volatilidad y el rendimiento esperado de mi cartera" → ["optimize"], use_sentiment=false
+- "dame la volatilidad y el rendimiento usando sentimientos de las noticias" → ["optimize"], use_sentiment=true
+- "optimizá usando sentimiento" → ["optimize"], use_sentiment=true
+- "qué rendimiento esperado tiene mi cartera?" → ["optimize"], use_sentiment=false
+- "cuál es la volatilidad esperada de mi portfolio?" → ["optimize"], use_sentiment=false
+
+IMPORTANTE sobre use_sentiment: ponelo en true SOLO cuando el usuario mencione explícitamente
+"sentimiento", "noticias", "news" o "sentiment" como parte del análisis de optimización.
 
 # Noticias
 - "noticias de AAPL" → ["news"], tickers=["AAPL"]
