@@ -53,6 +53,8 @@ class AuditService:
             if cached:
                 return cached
         live: list[OHLCV] = await self._market_gateway.fetch_ohlcv(ticker, period=period)
+        if live and self._market_data_repo is not None:
+            await self._market_data_repo.save_ohlcv(live)
         return live
 
     async def audit(self, query: AuditPortfolioQuery) -> AuditReport | None:

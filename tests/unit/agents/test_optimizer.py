@@ -6,8 +6,8 @@ from math import isfinite
 
 import pytest
 
-from financial_assistant.agents.quant.optimizer import PortfolioOptimizer
 from financial_assistant.domain.models.market_data import OHLCV
+from financial_assistant.domain.services.optimizer import PortfolioOptimizer
 
 
 def _make_prices(ticker: str, prices: list[float]) -> list[OHLCV]:
@@ -50,39 +50,39 @@ def four_asset_input() -> dict:
 
 class TestMinimumVarianceWeights:
     def test_weights_sum_to_one(self, optimizer, two_asset_input):
-        result = optimizer.minimum_variance(two_asset_input)
+        result = optimizer.optimize(two_asset_input)
         assert result is not None
         assert abs(sum(result.weights.values()) - 1.0) < 1e-4
 
     def test_all_weights_bounded(self, optimizer, two_asset_input):
-        result = optimizer.minimum_variance(two_asset_input)
+        result = optimizer.optimize(two_asset_input)
         assert result is not None
         assert all(0.0 <= w <= 1.0 for w in result.weights.values())
 
     def test_weights_keys_match_tickers(self, optimizer, two_asset_input):
-        result = optimizer.minimum_variance(two_asset_input)
+        result = optimizer.optimize(two_asset_input)
         assert result is not None
         assert set(result.weights.keys()) == set(two_asset_input.keys())
 
     def test_metrics_are_finite(self, optimizer, two_asset_input):
-        result = optimizer.minimum_variance(two_asset_input)
+        result = optimizer.optimize(two_asset_input)
         assert result is not None
         assert isfinite(result.expected_annual_return)
         assert isfinite(result.annual_volatility)
         assert isfinite(result.sharpe_ratio)
 
     def test_volatility_is_positive(self, optimizer, two_asset_input):
-        result = optimizer.minimum_variance(two_asset_input)
+        result = optimizer.optimize(two_asset_input)
         assert result is not None
         assert result.annual_volatility > 0
 
     def test_four_assets(self, optimizer, four_asset_input):
-        result = optimizer.minimum_variance(four_asset_input)
+        result = optimizer.optimize(four_asset_input)
         assert result is not None
         assert abs(sum(result.weights.values()) - 1.0) < 1e-4
 
     def test_expected_returns_per_ticker_present(self, optimizer, two_asset_input):
-        result = optimizer.minimum_variance(two_asset_input)
+        result = optimizer.optimize(two_asset_input)
         assert result is not None
         assert set(result.expected_returns_per_ticker.keys()) == set(two_asset_input.keys())
 
@@ -90,35 +90,48 @@ class TestMinimumVarianceWeights:
 class TestEdgeCases:
     def test_single_ticker_returns_none(self, optimizer):
         data = {"AAPL": _make_prices("AAPL", [100, 102, 104, 106, 108])}
-        assert optimizer.minimum_variance(data) is None
+        assert optimizer.optimize(data) is None
 
     def test_empty_input_returns_none(self, optimizer):
-        assert optimizer.minimum_variance({}) is None
+        assert optimizer.optimize({}) is None
 
     def test_empty_records_returns_none(self, optimizer):
-        assert optimizer.minimum_variance({"AAPL": [], "GOOGL": []}) is None
+        assert optimizer.optimize({"AAPL": [], "GOOGL": []}) is None
 
 
 class TestSentimentAdjustment:
-    def test_positive_sentiment_increases_expected_return(self, optimizer, two_asset_input):
-        base = optimizer.minimum_variance(two_asset_input)
-        adjusted = optimizer.minimum_variance(two_asset_input, sentiment_map={"AAPL": 1.0})
+    def test_sentiment_adjusts_expected_return(self, optimizer, two_asset_input):
+        base = optimizer.optimize(two_asset_input)
+        adjusted = optimizer.optimize(two_asset_input, sentiment_map={"AAPL": 1.0})
         assert base is not None and adjusted is not None
         assert adjusted.expected_returns_per_ticker["AAPL"] > base.expected_returns_per_ticker["AAPL"]
 
     def test_negative_sentiment_decreases_expected_return(self, optimizer, two_asset_input):
-        base = optimizer.minimum_variance(two_asset_input)
-        adjusted = optimizer.minimum_variance(two_asset_input, sentiment_map={"AAPL": -1.0})
+        base = optimizer.optimize(two_asset_input)
+        adjusted = optimizer.optimize(two_asset_input, sentiment_map={"AAPL": -1.0})
         assert base is not None and adjusted is not None
         assert adjusted.expected_returns_per_ticker["AAPL"] < base.expected_returns_per_ticker["AAPL"]
 
+    def test_sentiment_changes_weights(self, optimizer, two_asset_input):
+        # same objective (max_sharpe), different μ input → different weights
+        base = optimizer.optimize(two_asset_input)
+        adjusted = optimizer.optimize(two_asset_input, sentiment_map={"AAPL": 1.0})
+        assert base is not None and adjusted is not None
+        assert base.weights != adjusted.weights
+
+    def test_sentiment_weights_still_valid(self, optimizer, two_asset_input):
+        result = optimizer.optimize(two_asset_input, sentiment_map={"AAPL": 1.0})
+        assert result is not None
+        assert abs(sum(result.weights.values()) - 1.0) < 1e-4
+        assert all(0.0 <= w <= 1.0 for w in result.weights.values())
+
     def test_unknown_ticker_in_sentiment_map_is_ignored(self, optimizer, two_asset_input):
-        result = optimizer.minimum_variance(two_asset_input, sentiment_map={"UNKNOWN": 0.9})
+        result = optimizer.optimize(two_asset_input, sentiment_map={"UNKNOWN": 0.9})
         assert result is not None
         assert abs(sum(result.weights.values()) - 1.0) < 1e-4
 
-    def test_zero_sentiment_has_no_effect(self, optimizer, two_asset_input):
-        base = optimizer.minimum_variance(two_asset_input)
-        adjusted = optimizer.minimum_variance(two_asset_input, sentiment_map={"AAPL": 0.0})
+    def test_zero_sentiment_has_no_effect_on_mu(self, optimizer, two_asset_input):
+        base = optimizer.optimize(two_asset_input)
+        adjusted = optimizer.optimize(two_asset_input, sentiment_map={"AAPL": 0.0})
         assert base is not None and adjusted is not None
         assert base.expected_returns_per_ticker["AAPL"] == adjusted.expected_returns_per_ticker["AAPL"]

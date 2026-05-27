@@ -26,7 +26,7 @@
 \maketitle
 
 \begin{abstract}
-Este trabajo presenta el diseño e implementación de un asistente financiero inteligente basado en una arquitectura de micro-agentes coordinados. El sistema integra datos en tiempo real de activos de renta variable (Acciones), permitiendo al usuario final interactuar mediante lenguaje natural a través de la plataforma Telegram. La solución no solo centraliza la visualización del portfolio, sino que aplica modelos de optimización de varianza mínima, análisis de sentimiento de noticias y simulaciones estocásticas para proyectar flujos de fondos y proponer rebalanceos estratégicos.
+Este trabajo presenta el diseño e implementación de un asistente financiero inteligente basado en una arquitectura de micro-agentes coordinados. El sistema integra datos en tiempo real de activos de renta variable (Acciones), permitiendo al usuario final interactuar mediante lenguaje natural a través de la plataforma Telegram. La solución no solo centraliza la visualización del portfolio, sino que aplica modelos de optimización de máximo ratio de Sharpe, análisis de sentimiento de noticias y simulaciones estocásticas para proyectar flujos de fondos y proponer rebalanceos estratégicos.
 \end{abstract}
 
 \section{Introducción}
@@ -54,17 +54,26 @@ Actúa como el nodo central de decisión. Utiliza \textit{Function Calling} para
 
 \subsection{Agentes Especialistas}
 \begin{enumerate}
-    \item \textbf{Data Fetcher:} Encargado de la persistencia en PostgreSQL y la ingesta de datos vía APIs (yfinance).
+    \item \textbf{Data Fetcher:} Encargado de la persistencia en PostgreSQL y la ingesta de datos vía APIs (yfinance). Es el único agente \textit{blocking}: cuando se combina con otras intenciones, corre primero y el \textit{post\_fetch\_router} despacha los especialistas restantes una vez que los datos están disponibles.
     \item \textbf{The Auditor:} Calcula el rendimiento histórico comparado con el Dólar MEP y el índice S\&P 500.
-    \item \textbf{The Quant:} El motor matemático. Utiliza la librería \textit{PyPortfolioOpt} para la frontera eficiente y modelos de Monte Carlo para proyecciones.
-    \item \textbf{The News Scout:} Implementa técnicas de RAG y análisis de sentimiento sobre noticias financieras de última hora.
+    \item \textbf{The Quant:} El motor matemático. Utiliza la librería \textit{PyPortfolioOpt} para maximizar el ratio de Sharpe y modelos de Monte Carlo (GBM) para proyecciones de flujos futuros. Cuando el sentimiento está activo, corre en paralelo con \textbf{Quant No Sentiment} para comparar ambas optimizaciones.
+    \item \textbf{Quant No Sentiment:} Instancia paralela del agente Quant que opera con retornos históricos puros, sin ajuste de sentimiento. Permite al usuario comparar el impacto del sentimiento sobre los pesos óptimos bajo el mismo criterio de optimización.
+    \item \textbf{The News Scout:} Implementa análisis de sentimiento sobre noticias financieras de última hora usando FinBERT o TextBlob. Alimenta al agente Quant con los scores de sentimiento por ticker.
+    \item \textbf{FX Fetcher:} Obtiene el tipo de cambio USD/ARS actualizado para contextualizar los resultados en moneda local.
+    \item \textbf{UX Agent:} Sintetiza los resultados de todos los agentes especialistas en una respuesta en español comprensible para el usuario final.
 \end{enumerate}
 
 \section{Metodología de Optimización}
-Para la optimización de la cartera, el sistema se basa en la teoría moderna de selección de cartera. Dado un conjunto de activos con retornos esperados $E[R]$ y una matriz de covarianza $\Sigma$, se busca minimizar la varianza de la cartera:
-$$ \min w^T \Sigma w $$
+Para la optimización de la cartera, el sistema se basa en la teoría moderna de selección de cartera (Markowitz). Dado un conjunto de activos con retornos esperados $\mu$ y una matriz de covarianza $\Sigma$, se busca el portfolio tangente que maximiza el ratio de Sharpe:
+
+$$ \max \frac{w^T \mu - r_f}{\sqrt{w^T \Sigma w}} $$
+
 Sujeto a:
 $$ \sum w_i = 1, \quad w_i \geq 0 $$
+
+donde $r_f$ es la tasa libre de riesgo (5\% anual por defecto). Este portfolio se ubica en el punto de tangencia entre la \textit{Capital Market Line} (CML) y la frontera eficiente.
+
+El sistema ejecuta esta optimización en dos variantes en paralelo: una con $\mu$ ajustado por sentimiento ($\mu_{adj}$) y otra con $\mu$ histórico puro. Al utilizar el mismo criterio de optimización en ambos casos, la diferencia en los pesos resultantes es atribuible exclusivamente al ajuste de sentimiento, haciendo la comparación directamente interpretable.
 
 
 \section{Sinergia Multi-Agente: News Scout y Optimización Quant}
@@ -72,7 +81,7 @@ La innovación de este sistema radica en la retroalimentación entre el análisi
 
 El modelo de retorno ajustado se define como:
 \[ E[R_{adj}] = E[R_{hist}] \cdot (1 + \lambda \cdot s) \]
-Donde $s \in [-1, 1]$ es el score de sentimiento derivado del procesamiento de lenguaje natural (NLP) de noticias financieras y $\lambda$ es un factor de sensibilidad al mercado. Esta integración permite que el sistema detecte eventos de "cisne negro" o noticias corporativas críticas (ej. cambios en la calificación crediticia de una ON) antes de que se reflejen plenamente en el precio histórico.
+Donde $s \in [-1, 1]$ es el score de sentimiento derivado del procesamiento de lenguaje natural (NLP) de noticias financieras y $\lambda$ es un factor de sensibilidad al mercado. Esta integración permite que el sistema detecte eventos de ``cisne negro'' o noticias corporativas críticas antes de que se reflejen plenamente en el precio histórico. La ejecución paralela de ambas variantes (con y sin sentimiento) expone al usuario la diferencia concreta en pesos y ratio de Sharpe, cuantificando el valor informativo del análisis de sentimiento.
 
 \section{Desarrollo Técnico}
 El stack tecnológico seleccionado comprende Python 3.11+, utilizando \textit{Aiogram} para la interfaz de Telegram y \textit{OpenAI/Anthropic} como modelos de razonamiento. La integración de los agentes se realiza mediante grafos dirigidos acíclicos (DAG), garantizando que la respuesta final sea sintetizada por un agente de UX que traduce métricas complejas a un lenguaje comprensible.

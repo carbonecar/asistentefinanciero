@@ -3,9 +3,10 @@ Batch script to pre-compute and persist historical news sentiment.
 
 Usage:
     python -m scripts.run_sentiment_batch
+    python -m scripts.run_sentiment_batch --lookback-days 400
 
 Reads ANALYSIS_TICKERS from .env (comma-separated, e.g. "AAPL,TSLA,GGAL.BA").
-Fetches 60-day Finnhub news per ticker, runs FinBERT sentiment day-by-day,
+Fetches N-day Finnhub news per ticker, runs FinBERT sentiment day-by-day,
 and upserts the results into the sentiment_history DB table.
 
 Requires:
@@ -14,6 +15,7 @@ Requires:
     - DB running and migration 0002 applied (make migrate)
 """
 
+import argparse
 import asyncio
 import sys
 from datetime import date, timedelta
@@ -28,7 +30,7 @@ from financial_assistant.infrastructure.news.finnhub_news_gateway import Finnhub
 from financial_assistant.infrastructure.nlp.finbert_sentiment_analyzer import FinBERTSentimentAnalyzer
 
 
-async def main() -> None:
+async def main(lookback_days: int) -> None:
     settings = Settings()
 
     tickers = settings.analysis_tickers_list
@@ -36,7 +38,6 @@ async def main() -> None:
         print("[batch] ERROR: ANALYSIS_TICKERS is empty. Set it in .env, e.g. ANALYSIS_TICKERS=AAPL,TSLA,GGAL.BA")
         sys.exit(1)
 
-    lookback_days = 60
     today = date.today()
     from_date = today - timedelta(days=lookback_days)
 
@@ -56,23 +57,30 @@ async def main() -> None:
 
     service = NewsService(gateway, analyzer, repo)
 
-    query = HistoricalNewsQuery(tickers=tickers, lookback_days=lookback_days)
+    total_saved = 0
+    for ticker in tickers:
+        print(f"[batch] [{ticker}] Fetching news and running FinBERT...")
+        query = HistoricalNewsQuery(tickers=[ticker], lookback_days=lookback_days)
+        results = await service.analyze_historical_sentiment(query)
+        records = results.get(ticker, [])
+        if records:
+            await repo.save(records)
+            total_saved += len(records)
+            print(f"[batch] [{ticker}] Saved {len(records)} daily records.")
+        else:
+            print(f"[batch] [{ticker}] No records found.")
 
-    print("[batch] Fetching news and running FinBERT sentiment analysis...")
-    results = await service.analyze_historical_sentiment(query)
-
-    # Flatten and save to DB
-    all_records = [day for daily in results.values() for day in daily]
-
-    print(f"[batch] Computed {len(all_records)} daily records across {len(tickers)} ticker(s).")
-    if all_records:
-        await repo.save(all_records)
-        print("[batch] Saved to sentiment_history table.")
-    else:
-        print("[batch] No records to save (no articles found for the requested period).")
-
+    print(f"[batch] Done. Total records saved: {total_saved}.")
     await engine.dispose()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Batch historical sentiment computation")
+    parser.add_argument(
+        "--lookback-days",
+        type=int,
+        default=60,
+        help="Number of calendar days to look back from today (default: 60)",
+    )
+    args = parser.parse_args()
+    asyncio.run(main(args.lookback_days))

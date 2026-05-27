@@ -5,12 +5,16 @@ from financial_assistant.domain.models.analysis import OptimizedWeights, QuantRe
 from financial_assistant.domain.models.market_data import OHLCV
 from financial_assistant.domain.models.news import DailySentiment
 from financial_assistant.domain.ports.market_gateway import IMarketDataGateway
-from financial_assistant.domain.ports.repositories import IPortfolioRepository
+from financial_assistant.domain.ports.repositories import IMarketDataRepository, IPortfolioRepository
+from financial_assistant.domain.services.optimizer import MaxSharpeStrategy, OptimizationStrategy
 
 
 class OptimizerProtocol(ABC):
-    def minimum_variance(
-        self, ohlcv_by_ticker: dict[str, list[OHLCV]], sentiment_map: dict[str, float]
+    def optimize(
+        self,
+        ohlcv_by_ticker: dict[str, list[OHLCV]],
+        sentiment_map: dict[str, float],
+        strategy: OptimizationStrategy = MaxSharpeStrategy(),
     ) -> OptimizedWeights | None:
         raise NotImplementedError
 
@@ -29,16 +33,19 @@ class QuantService:
         market_gateway: IMarketDataGateway,
         optimizer: OptimizerProtocol,
         simulator: SimulatorProtocol,
+        market_data_repo: IMarketDataRepository | None = None,
     ) -> None:
         self._portfolio_repo = portfolio_repo
         self._market_gateway = market_gateway
         self._optimizer = optimizer
         self._simulator = simulator
+        self._market_data_repo = market_data_repo
 
     async def optimize(
         self,
         query: OptimizePortfolioQuery,
         sentiment_results: dict[str, list[DailySentiment]] | None = None,
+        strategy: OptimizationStrategy = MaxSharpeStrategy(),
     ) -> QuantResult | None:
         portfolio = await self._portfolio_repo.get_by_user_id(query.user_id)
         if not portfolio or portfolio.is_empty():
@@ -47,6 +54,8 @@ class QuantService:
         ohlcv_by_ticker = {}
         for ticker in portfolio.tickers():
             records = await self._market_gateway.fetch_ohlcv(ticker, period="1y")
+            if records and self._market_data_repo is not None:
+                await self._market_data_repo.save_ohlcv(records)
             ohlcv_by_ticker[ticker] = records
 
         sentiment_map = (
@@ -55,9 +64,10 @@ class QuantService:
             else {}
         )
 
-        weights = self._optimizer.minimum_variance(
+        weights = self._optimizer.optimize(
             ohlcv_by_ticker,
             sentiment_map if query.use_sentiment else {},
+            strategy=strategy,
         )
 
         # Pesos actuales por valor de mercado

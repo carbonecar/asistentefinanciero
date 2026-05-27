@@ -115,8 +115,12 @@ State persistence uses LangGraph `MemorySaver` (in-memory). For production, repl
 - **LLM provider flexibility**: `llm_factory.py` crea `ChatOpenAI` o `ChatOllama` según `LLM_PROVIDER` en `.env`. Default: `openai` con `gpt-4o-mini`.
 - **Dual sentiment analyzers**: TextBlobSentimentAnalyzer (rápido, sin GPU) y FinBERTSentimentAnalyzer (más preciso para textos financieros en inglés). Se selecciona vía config.
 - **Dual news sources**: NewsAPIGateway (newsapi.org) y YFinanceNewsGateway (noticias embebidas en yfinance). Ambos implementan `INewsGateway`.
-- **Sentiment adjustment**: `E[R_adj] = E[R_hist] * (1 + λ * s)` donde `s ∈ [-1,1]`, `λ` es `SENTIMENT_LAMBDA`
-- **Portfolio optimization**: PyPortfolioOpt `min_volatility()` con L2 regularization (avoids corner solutions)
+- **Portfolio optimization**: tres estrategias OCP via `OptimizationStrategy` ABC en `domain/services/optimizer.py`:
+  - `MaxSharpeStrategy` — maximiza Sharpe (`max_sharpe(rf=0.05)`); ajusta μ con sentimiento
+  - `MinVolatilityStrategy` — minimiza varianza (`min_volatility()`); ignora sentimiento
+  - `MinVolatilitySentimentStrategy` — minimiza varianza escalando la diagonal de Σ con sentimiento
+- **Sentiment adjustment (MaxSharpe)**: `μ_adj[i] = μ[i] * (1 + λ * s[i])` donde `s ∈ [-1,1]`, `λ` es `SENTIMENT_LAMBDA`
+- **Sentiment adjustment (MinVolatilitySentiment)**: `Σ̃[i,i] = Σ[i,i] * (1 − λ * s[i])` — activos con sentimiento negativo reciben mayor varianza percibida, alejando al optimizador de ellos sin tocar μ
 - **Monte Carlo**: GBM with per-ticker weighted mu/sigma over `MONTE_CARLO_HORIZON_DAYS` days
 - **DB upserts**: `ON CONFLICT DO UPDATE` for OHLCV records (idempotent data ingestion)
 

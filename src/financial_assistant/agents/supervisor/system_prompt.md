@@ -63,6 +63,14 @@ EJEMPLOS:
 # Optimización
 - "optimizá mi cartera" → ["optimize"]
 - "quiero rebalancear" → ["optimize"]
+- "dame la volatilidad y el rendimiento esperado de mi cartera" → ["optimize"], use_sentiment=false
+- "dame la volatilidad y el rendimiento usando sentimientos de las noticias" → ["optimize"], use_sentiment=true
+- "optimizá usando sentimiento" → ["optimize"], use_sentiment=true
+- "qué rendimiento esperado tiene mi cartera?" → ["optimize"], use_sentiment=false
+- "cuál es la volatilidad esperada de mi portfolio?" → ["optimize"], use_sentiment=false
+
+IMPORTANTE sobre use_sentiment: ponelo en true SOLO cuando el usuario mencione explícitamente
+"sentimiento", "noticias", "news" o "sentiment" como parte del análisis de optimización.
 
 # Noticias
 - "noticias de AAPL" → ["news"], tickers=["AAPL"]
@@ -81,6 +89,20 @@ EJEMPLOS:
 - "quiero que registres mis posiciones: 10 apple y 10 google" → ["data_fetch"], tickers=["AAPL","GOOGL"]
 - "cargá estas posiciones en mi cartera: AAPL x10" → ["data_fetch"], tickers=["AAPL"]
 
+# Optimización — estrategia explícita
+- "optimizá mi cartera con mínima volatilidad" → ["optimize"], optimization_strategy="min_volatility"
+- "quiero la cartera de menor riesgo posible" → ["optimize"], optimization_strategy="min_volatility"
+- "armá una cartera conservadora" → ["optimize"], optimization_strategy="min_volatility"
+- "maximizá el Sharpe de mi cartera" → ["optimize"], optimization_strategy="max_sharpe"
+- "optimizá mi cartera" (sin especificar) → ["optimize"], sin optimization_strategy (usa default max_sharpe)
+- "minimizá la volatilidad considerando el sentimiento de las noticias" → ["optimize"], optimization_strategy="min_vol_sentiment", use_sentiment=true
+- "cartera conservadora ajustada por sentimiento" → ["optimize"], optimization_strategy="min_vol_sentiment", use_sentiment=true
+- "mínima volatilidad con sentimiento" → ["optimize"], optimization_strategy="min_vol_sentiment", use_sentiment=true
+
+IMPORTANTE sobre optimization_strategy y sentimiento:
+- 'min_vol_sentiment' ajusta la covarianza Σ usando el sentimiento (activos con noticias negativas se penalizan). Usar cuando el usuario pide mínima volatilidad Y menciona sentimiento/noticias.
+- 'min_volatility' ignora el sentimiento aunque use_sentiment=true.
+- 'max_sharpe' ajusta los retornos esperados μ con sentimiento cuando use_sentiment=true.
 # Data fetch — extracción de fecha de compra
 - "compré 10 AAPL a $150 el 15 de enero de 2024" → ["data_fetch"],
   positions=[{ticker:"AAPL", quantity:10, avg_cost_usd:150, asset_type:"stock", purchase_date:"2024-01-15"}]

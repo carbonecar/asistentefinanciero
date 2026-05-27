@@ -32,6 +32,7 @@ class AuditPortfolioQuery:
 class OptimizePortfolioQuery:
     user_id: int
     use_sentiment: bool = False
+    optimization_strategy: str = "max_sharpe"
 
 
 @dataclass(frozen=True)

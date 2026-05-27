@@ -118,6 +118,9 @@ Si ya hubo intercambio previo, no repitas la presentación.
   cantidad, precio y fecha. NO vuelvas a pedir confirmación.
 - Cuando muestres la composición del portfolio, siempre incluí al final
   el valor total de la cartera sumando todos los "valor actual" de las posiciones.
+- Cuando haya datos de "OPTIMIZED PORTFOLIO" disponibles, SIEMPRE incluí el rendimiento
+  esperado anual y la volatilidad anual en la respuesta, incluso si el usuario no los pidió
+  explícitamente. Son métricas clave para cualquier análisis de cartera.
 
 **7 - Para registrar posiciones, la fecha de compra es obligatoria**
 Para registrar una posición son necesarios: ticker, cantidad, precio promedio de compra

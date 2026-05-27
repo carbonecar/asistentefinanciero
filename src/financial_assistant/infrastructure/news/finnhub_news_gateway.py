@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from datetime import UTC, date, datetime, timedelta
 from functools import partial
 from typing import Any
@@ -16,6 +17,9 @@ _BASE_URL = "https://finnhub.io/api/v1/company-news"
 _TIMEOUT_SECONDS = 15.0
 _LOOKBACK_DAYS = 60
 _CHUNK_DAYS = 7  # split range into weekly chunks to bypass per-request article limits
+_INTER_CHUNK_DELAY = 1.1  # seconds between chunks — free tier is 60 req/min
+_RETRY_DELAY = 65.0  # seconds to wait after a 429 before retrying
+_MAX_RETRIES = 2
 
 
 class FinnhubNewsGateway(INewsGateway, IHistoricalNewsGateway):
@@ -71,7 +75,9 @@ class FinnhubNewsGateway(INewsGateway, IHistoricalNewsGateway):
 
         loop = asyncio.get_running_loop()
         all_articles: list[NewsArticle] = []
-        for chunk_from, chunk_to in chunks:
+        for i, (chunk_from, chunk_to) in enumerate(chunks):
+            if i > 0:
+                await asyncio.sleep(_INTER_CHUNK_DELAY)
             batch = await loop.run_in_executor(None, partial(self._fetch_sync, ticker, chunk_from, chunk_to))
             all_articles.extend(batch)
 
@@ -97,13 +103,32 @@ class FinnhubNewsGateway(INewsGateway, IHistoricalNewsGateway):
             "to": to_date.isoformat(),
             "token": self._api_key,
         }
-        try:
-            with httpx.Client(timeout=_TIMEOUT_SECONDS) as client:
-                response = client.get(_BASE_URL, params=params)
-                response.raise_for_status()
-                items: list[dict[str, Any]] = response.json() or []
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("[Finnhub] Failed to fetch news for %s (%s -> %s)", ticker, from_date, to_date)
+        for attempt in range(1, _MAX_RETRIES + 1):
+            try:
+                with httpx.Client(timeout=_TIMEOUT_SECONDS) as client:
+                    response = client.get(_BASE_URL, params=params)
+                    if response.status_code == 429:
+                        logger.warning(
+                            "[Finnhub] 429 rate-limited for %s (%s→%s), attempt %d/%d — sleeping %.0fs",
+                            ticker,
+                            from_date,
+                            to_date,
+                            attempt,
+                            _MAX_RETRIES,
+                            _RETRY_DELAY,
+                        )
+                        time.sleep(_RETRY_DELAY)
+                        continue
+                    response.raise_for_status()
+                    items: list[dict[str, Any]] = response.json() or []
+                    break
+            except httpx.HTTPStatusError:
+                raise
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.exception("[Finnhub] Failed to fetch news for %s (%s -> %s)", ticker, from_date, to_date)
+                return []
+        else:
+            logger.error("[Finnhub] Gave up after %d retries for %s (%s→%s)", _MAX_RETRIES, ticker, from_date, to_date)
             return []
 
         articles: list[NewsArticle] = []

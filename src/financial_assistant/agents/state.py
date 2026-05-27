@@ -59,6 +59,7 @@ class AgentState(TypedDict, total=False):
     period: str  # e.g. "1y", "6mo"
     use_sentiment: bool
     positions: list[dict[str, Any]]  # [{ticker, quantity, avg_cost_usd, asset_type}]
+    optimization_strategy: str  # "max_sharpe" | "min_volatility"
     pending_positions: list[dict[str, Any]] | None  # posiciones esperando confirmación — se preserva entre turnos
 
     # ---- Agent outputs (accumulated within a turn) ----

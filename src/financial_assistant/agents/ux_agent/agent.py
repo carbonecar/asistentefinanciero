@@ -112,7 +112,8 @@ def _build_data_summary(state: AgentState) -> str:
             if qr.optimized_weights:
                 w = qr.optimized_weights
                 sentiment_note = " (ajustado por sentimiento)" if qr.sentiment_adjusted else ""
-                parts.append(f"OPTIMIZED PORTFOLIO{sentiment_note}:")
+                strategy_note = f" | estrategia: {w.optimization_strategy}" if w.optimization_strategy else ""
+                parts.append(f"OPTIMIZED PORTFOLIO{sentiment_note}{strategy_note}:")
                 parts.append(f"  Expected return: {w.expected_annual_return:.2%}")
                 parts.append(f"  Volatility: {w.annual_volatility:.2%}")
                 parts.append(f"  Sharpe ratio: {w.sharpe_ratio:.2f}")

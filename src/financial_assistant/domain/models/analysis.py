@@ -32,6 +32,7 @@ class OptimizedWeights:
     annual_volatility: float
     sharpe_ratio: float
     expected_returns_per_ticker: dict[str, float] = field(default_factory=dict)
+    optimization_strategy: str = ""
 
 
 @dataclass(frozen=True)
